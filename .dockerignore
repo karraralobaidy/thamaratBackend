@@ -1,0 +1,13 @@
+target/
+.git/
+.idea/
+.vscode/
+# mvnw
+# mvnw.cmd
+# .mvn/
+*.sql
+blocked_ips.txt
+uploads/
+PROJECT_DOCS_AR.md
+SWAGGER_GUIDE.md
+HELP.md
