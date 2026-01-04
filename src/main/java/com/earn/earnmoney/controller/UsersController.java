@@ -396,16 +396,24 @@ public class UsersController {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
 
-        helper.setFrom("halalconfirm@gmail.com", "دنانيرك");
+        helper.setFrom("thamaratConfirm@gmail.com", "Thamarat Support");
         helper.setTo(recipientEmail);
-        String subject = "طلب اعادة تعيين كلمة المرور";
-        String content = "<p>مرحبا,</p>"
-                + "<p>لقد طلبت إعادة تعيين كلمة المرور الخاصة بك.\n</p>"
-                + "<p>انسخ رمز التاكيد أدناه والصقة في البرنامج لتغيير كلمة المرور الخاصة بك:\n</p>"
-                + "<p><b>" + link + "</b></p>"
-                + "<br>"
-                + "<p>تجاهل هذا البريد الإلكتروني إذا كنت تتذكر كلمة مرورك "
-                + "أو أنك لم تقدم الطلب.</p>";
+        String subject = "🔐 إعادة تعيين كلمة المرور - ثمرات";
+
+        String content = "<div dir='rtl' style='font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;'>"
+                + "<div style='max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>"
+                + "<h2 style='color: #2c3e50; text-align: center; margin-bottom: 20px;'>إعادة تعيين كلمة المرور</h2>"
+                + "<p style='color: #555; font-size: 16px; line-height: 1.6;'>مرحباً،</p>"
+                + "<p style='color: #555; font-size: 16px; line-height: 1.6;'>لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك في تطبيق <b>ثمرات</b>.</p>"
+                + "<p style='color: #555; font-size: 16px; line-height: 1.6;'>استخدم الرمز أدناه لإكمال العملية:</p>"
+                + "<div style='text-align: center; margin: 30px 0;'>"
+                + "<span style='display: inline-block; background-color: #e74c3c; color: #ffffff; font-size: 24px; font-weight: bold; padding: 15px 30px; border-radius: 5px; letter-spacing: 2px;'>"
+                + link + "</span>"
+                + "</div>"
+                + "<p style='color: #7f8c8d; font-size: 14px; text-align: center;'>إذا لم تقم بطلب هذا التغيير، يرجى تجاهل هذا البريد الإلكتروني.</p>"
+                + "<hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'>"
+                + "<p style='color: #aaa; font-size: 12px; text-align: center;'>فريق دعم ثمرات &copy; 2025</p>"
+                + "</div></div>";
 
         helper.setSubject(subject);
 
@@ -419,17 +427,23 @@ public class UsersController {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
 
-        helper.setFrom("halalconfirm@gmail.com", "HALAL");
+        helper.setFrom("thamaratConfirm@gmail.com", "Thamarat Team");
         helper.setTo(recipientEmail);
 
-        String subject = " طلب رمز التفعيل";
+        String subject = "✨ رمز تفعيل حسابك - ثمرات";
 
-        String content = "<center>"
-                + "<p>اهلا وسهلا بك في دنانيرك,</p>"
-                + "<p>رمز التفعيل الخاص بك \n</p>"
-                + "<p> <b>" + activecode + "</b> </p>"
-                + "<br>"
-                + "</center>";
+        String content = "<div dir='rtl' style='font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;'>"
+                + "<div style='max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>"
+                + "<h2 style='color: #27ae60; text-align: center; margin-bottom: 20px;'>مرحباً بك في ثمرات!</h2>"
+                + "<p style='color: #555; font-size: 16px; line-height: 1.6; text-align: center;'>شكراً لتسجيلك معنا. لتفعيل حسابك والبدء في كسب الأرباح، يرجى استخدام الرمز التالي:</p>"
+                + "<div style='text-align: center; margin: 30px 0;'>"
+                + "<span style='display: inline-block; background-color: #27ae60; color: #ffffff; font-size: 28px; font-weight: bold; padding: 15px 40px; border-radius: 8px; letter-spacing: 5px;'>"
+                + activecode + "</span>"
+                + "</div>"
+                + "<p style='color: #7f8c8d; font-size: 14px; text-align: center;'>نتمنى لك تجربة ممتعة ومربحة!</p>"
+                + "<hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'>"
+                + "<p style='color: #aaa; font-size: 12px; text-align: center;'>فريق ثمرات &copy; 2025</p>"
+                + "</div></div>";
 
         helper.setSubject(subject);
 
