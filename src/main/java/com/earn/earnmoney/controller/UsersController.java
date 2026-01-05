@@ -297,9 +297,9 @@ public class UsersController {
             user.setActive(!Boolean.parseBoolean(active));
             if (user.isActive()) {
                 sendEmail(user.getUsername(),
-                        " Halal - تم تفعيل حسابك بنجاح",
+                        " Thamarat - تم تفعيل حسابك بنجاح",
                         " مرحبا " + user.getFull_name()
-                                + " , تم تفعيل حسابك بنجاح يمكنك الآن الدخول الى حسابك -  تطبيق Halal ");
+                                + " , تم تفعيل حسابك بنجاح يمكنك الآن الدخول الى حسابك -  تطبيق Thamarat ");
             }
             userService.updateUser(user);
             return "تم التفعيل او الغاء تفعيل بنجاح";
@@ -364,7 +364,7 @@ public class UsersController {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
 
-        helper.setFrom("thamaratConfirm@gmail.com", "Thamarat");
+        helper.setFrom("thamaratconfirm@gmail.com", "Thamarat");
         helper.setTo(recipientEmail);
         String subject = title;
         String content = "<p>مرحبا,</p></br>" + body;
@@ -396,7 +396,7 @@ public class UsersController {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
 
-        helper.setFrom("thamaratConfirm@gmail.com", "Thamarat Support");
+        helper.setFrom("thamaratconfirm@gmail.com", "Thamarat Support");
         helper.setTo(recipientEmail);
         String subject = "🔐 إعادة تعيين كلمة المرور - ثمرات";
 
