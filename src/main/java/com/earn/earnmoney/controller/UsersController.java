@@ -364,7 +364,7 @@ public class UsersController {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
 
-        helper.setFrom("halalconfirm@gmail.com", "HALAL");
+        helper.setFrom("thamaratConfirm@gmail.com", "Thamarat");
         helper.setTo(recipientEmail);
         String subject = title;
         String content = "<p>مرحبا,</p></br>" + body;
