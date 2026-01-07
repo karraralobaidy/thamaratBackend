@@ -9,6 +9,7 @@ import com.earn.earnmoney.model.Role;
 import com.earn.earnmoney.model.UserAuth;
 import com.earn.earnmoney.payload.request.SignupRequest;
 import com.earn.earnmoney.payload.response.MessageResponse;
+import com.earn.earnmoney.model.Image;
 import com.earn.earnmoney.dto.UserProfileResponse;
 import com.earn.earnmoney.security.jwt.JwtUtils;
 import com.earn.earnmoney.security.services.UserDetailsImpl;
