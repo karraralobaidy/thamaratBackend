@@ -2,7 +2,6 @@ package com.earn.earnmoney.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
-import org.hibernate.Hibernate;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -24,9 +23,17 @@ public class Withdraw implements Serializable {
     private double amount;
     private String wallet;
     private String kindWallet;
+    private String cardHolderName;
+    private double fee;
     private LocalDate date;
     private String kindWithdraw;
     private boolean stateWithdraw = false;
+
+    @Enumerated(EnumType.STRING)
+    private WithdrawStatus status = WithdrawStatus.PENDING;
+
+    private String reason;
+
     @Column(name = "username")
     private String user;
     private String userFullName;

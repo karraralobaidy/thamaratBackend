@@ -27,7 +27,7 @@ public class GameService {
     private final LogTransactionRepo logRepo;
 
     // Default configuration cost
-    private static final int SPIN_COST = 10;
+    private static final int SPIN_COST = 50;
 
     @PostConstruct
     public void init() {
@@ -38,21 +38,20 @@ public class GameService {
 
     private void initializeDefaultPrizes() {
         List<WheelPrize> prizes = new ArrayList<>();
-        // IMPROVED PRIZES WITH APP PROFIT
-        // Average payout = ~9.25 points, Cost = 10 points, House edge = ~0.75 points
+        // REFERENCE IMAGE STYLE - Purple/Orange alternating
 
-        // 0 Points: 40% (Loss)
-        prizes.add(new WheelPrize(null, "حظ أوفر", 0, 40.0, "#64748B", "close-circle-outline"));
-        // 5 Points: 30%
-        prizes.add(new WheelPrize(null, "5 نقاط", 5, 30.0, "#F59E0B", "flame-outline"));
-        // 10 Points: 15% (Break even)
-        prizes.add(new WheelPrize(null, "10 نقاط", 10, 15.0, "#10B981", "leaf-outline"));
-        // 25 Points: 10%
-        prizes.add(new WheelPrize(null, "25 نقطة", 25, 10.0, "#3B82F6", "gift-outline"));
-        // 50 Points: 4%
-        prizes.add(new WheelPrize(null, "50 نقطة", 50, 4.0, "#8B5CF6", "diamond-outline"));
-        // 200 Points: 1% (Jackpot)
-        prizes.add(new WheelPrize(null, "200 نقطة", 200, 1.0, "#EF4444", "trophy-outline"));
+        // 0 Points: 30% - Purple segment
+        prizes.add(new WheelPrize(null, "حظ أوفر", 0, 30.0, "#7B2D8E", "sad-outline"));
+        // 25 Points: 35% - Orange segment
+        prizes.add(new WheelPrize(null, "25 نقطة", 25, 35.0, "#E8702A", "gift-outline"));
+        // 50 Points: 20% - Purple segment
+        prizes.add(new WheelPrize(null, "50 نقطة", 50, 20.0, "#7B2D8E", "star-outline"));
+        // 75 Points: 10% - Orange segment
+        prizes.add(new WheelPrize(null, "75 نقطة", 75, 10.0, "#E8702A", "flame-outline"));
+        // 100 Points: 4% - Purple segment
+        prizes.add(new WheelPrize(null, "100 نقطة", 100, 4.0, "#7B2D8E", "diamond-outline"));
+        // 200 Points: 1% - Orange segment
+        prizes.add(new WheelPrize(null, "200 نقطة!", 200, 1.0, "#E8702A", "trophy-outline"));
 
         wheelPrizeRepo.saveAll(prizes);
     }

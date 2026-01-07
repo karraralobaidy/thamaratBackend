@@ -23,6 +23,8 @@ import java.util.Map;
 @RequestMapping("/api/marketplace")
 public class StoreController {
 
+    // Controller for Marketplace operations
+
     private final StoreService storeService;
     private final UserAuthServiceImpl userService;
 
@@ -133,14 +135,20 @@ public class StoreController {
 
     // Get orders coming to me (as a seller)
     @GetMapping("/seller/orders")
-    public ResponseEntity<List<CardPurchase>> getSellerOrders() {
-        List<CardPurchase> orders = storeService.getSellerOrders(getCurrentUser().getId());
+    public ResponseEntity<?> getSellerOrders() {
+        try {
+            List<CardPurchase> orders = storeService.getSellerOrders(getCurrentUser().getId());
 
-        // Hide buyer data logic could go here if we wanted to restrict viewing until
-        // some status
-        // But plan says seller needs to view details to fulfill.
+            // Hide buyer data logic could go here if we wanted to restrict viewing until
+            // some status
+            // But plan says seller needs to view details to fulfill.
 
-        return ResponseEntity.ok(orders);
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMsg = e.getMessage() != null ? e.getMessage() : e.toString();
+            return ResponseEntity.status(500).body(java.util.Collections.singletonMap("error", errorMsg));
+        }
     }
 
     // Seller delivers order (sends code/tracking)
@@ -149,6 +157,49 @@ public class StoreController {
         try {
             storeService.deliverOrder(getCurrentUser(), purchaseId, code);
             return ResponseEntity.ok(Map.of("message", "تم تسليم الطلب بنجاح"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Seller updates order status
+    @PostMapping("/seller/orders/{id}/status")
+    public ResponseEntity<?> updateOrderStatus(
+            @PathVariable Long id,
+            @RequestParam String status) {
+        try {
+            storeService.updateOrderStatus(getCurrentUser(), id,
+                    CardPurchase.PurchaseStatus.valueOf(status.toUpperCase()));
+            return ResponseEntity.ok(Map.of("message", "تم تحديث حالة الطلب"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "الحالة غير صالحة"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Seller rejects/returns an order
+    @PostMapping("/seller/orders/{id}/reject")
+    public ResponseEntity<?> rejectOrder(
+            @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "Cancelled by seller") String reason) {
+        try {
+            storeService.sellerRejectOrder(getCurrentUser(), id, reason);
+            return ResponseEntity.ok(Map.of("message", "تم إلغاء الطلب بنجاح"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Buyer reports an order
+    @PostMapping("/report/{purchaseId}")
+    public ResponseEntity<?> fileReport(
+            @PathVariable Long purchaseId,
+            @RequestParam String reason,
+            @RequestParam String description) {
+        try {
+            storeService.fileReport(getCurrentUser(), purchaseId, reason, description);
+            return ResponseEntity.ok(Map.of("message", "تم تقديم البلاغ بنجاح"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -212,8 +263,8 @@ public class StoreController {
     // Admin: Get All Products (for management)
     @GetMapping("/admin/all-products")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<CardProduct>> getAllProductsAdmin() {
-        List<CardProduct> products = storeService.getAllProductsAdmin();
+    public ResponseEntity<List<CardProduct>> getAllProductsAdmin(@RequestParam(required = false) String search) {
+        List<CardProduct> products = storeService.getAllProductsAdmin(search);
         products.forEach(p -> {
             if (p.getImage() != null)
                 p.getImage().setImage(null);
@@ -246,7 +297,14 @@ public class StoreController {
 
     private UserAuth getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
-        return userService.findById(userDetails.getId());
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new RuntimeException("User not authenticated");
+        }
+        try {
+            UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+            return userService.findById(userDetails.getId());
+        } catch (ClassCastException e) {
+            throw new RuntimeException("Invalid user principal");
+        }
     }
 }

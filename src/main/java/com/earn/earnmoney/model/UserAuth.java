@@ -41,6 +41,9 @@ public class UserAuth {
     private boolean active;
     private boolean band;
 
+    @Column(name = "deleted")
+    private boolean deleted = false;
+
     @Column(name = "reset_password_token")
     private String resetPasswordToken;
 

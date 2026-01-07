@@ -74,12 +74,19 @@ public class CardPurchase {
         purchaseDate = LocalDateTime.now();
     }
 
+    @Column(name = "is_funds_released")
+    private boolean isFundsReleased = false; // Funds held in escrow until true
+
     public enum PurchaseStatus {
-        PENDING, // Waiting for processing (Digital)
-        WAITING_DELIVERY, // Waiting for seller to deliver (Physical)
-        APPROVED, // Unused?
-        REJECTED,
-        DELIVERED, // Completed
-        COMPLETED // Funds Released (for Physical)
+        PENDING, // Initial state, waiting for automated process or seller acceptance
+        PENDING_APPROVAL, // For Manual/Physical orders: Pending Seller Approval
+        PROCESSING, // Seller is preparing the item
+        ON_DELIVERY, // Item is on the way
+        WAITING_DELIVERY, // Legacy: Kept for backward compatibility
+        DELIVERED, // Item delivered, pending Admin confirmation/Payout
+        COMPLETED, // Final state: Funds Released
+        CANCELLED, // Order cancelled, funds refunded
+        REPORTED, // Dispute raised by buyer
+        REJECTED // Rejected by Seller or Admin (before delivery)
     }
 }

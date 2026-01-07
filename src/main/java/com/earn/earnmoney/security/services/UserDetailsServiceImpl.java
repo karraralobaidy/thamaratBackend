@@ -1,6 +1,5 @@
 package com.earn.earnmoney.security.services;
 
-
 import com.earn.earnmoney.model.UserAuth;
 import com.earn.earnmoney.repo.UserAuthRepo;
 import lombok.NoArgsConstructor;
@@ -27,6 +26,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserAuth user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
+
+        if (user.isDeleted()) {
+            throw new UsernameNotFoundException("User is deleted");
+        }
 
         return UserDetailsImpl.build(user);
     }

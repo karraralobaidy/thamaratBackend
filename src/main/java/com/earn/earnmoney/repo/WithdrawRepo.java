@@ -14,6 +14,8 @@ import java.util.Optional;
 @Repository
 public interface WithdrawRepo extends JpaRepository<Withdraw, Long> {
 
+    Page<Withdraw> findByStatus(com.earn.earnmoney.model.WithdrawStatus status, Pageable pageable);
+
     @Query("SELECT r.id , r.amount,r.kindWallet,r.kindWithdraw,r.user,r.date,r.userFullName,r.wallet,r.withdrawImage.id FROM Withdraw r  where r.stateWithdraw = false and r.user LIKE %:query% ")
     Page<Withdraw> findWithdrawPage(@Param("query") String query, Pageable pageable);
 
@@ -24,11 +26,20 @@ public interface WithdrawRepo extends JpaRepository<Withdraw, Long> {
 
     List<Withdraw> findAll();
 
-    @Query("SELECT  r.id , r.amount,r.kindWallet,r.kindWithdraw,r.user,r.date,r.userFullName,r.wallet,r.stateWithdraw FROM Withdraw r where  r.user = :user")
+    @Query("SELECT r FROM Withdraw r where  r.user = :user")
     Page<Withdraw> findWithdrawPageByUser(@Param("user") String user, Pageable pageable);
 
     List<Withdraw> findAllByUser(String name);
 
     Optional<Withdraw> findByUser(String name);
+
+    @Query("SELECT  COALESCE(SUM(r.amount), 0) FROM Withdraw r where r.userId = :userId")
+    Double sumAmountByUser(@Param("userId") Long userId);
+
+    long countByUserIdAndStatus(Long userId, com.earn.earnmoney.model.WithdrawStatus status);
+
+    long countByStateWithdrawFalse();
+
+    long countByStatus(com.earn.earnmoney.model.WithdrawStatus status);
 
 }

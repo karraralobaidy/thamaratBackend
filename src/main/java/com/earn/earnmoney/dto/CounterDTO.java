@@ -10,6 +10,7 @@ public class CounterDTO {
     private Long price;
     private boolean paid;
     private boolean active;
+    private Long durationDays;
 
     // معلومات المستوى الأول
     private int pointsPerClick;

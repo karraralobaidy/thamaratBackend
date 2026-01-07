@@ -3,6 +3,7 @@ package com.earn.earnmoney.controller;
 import com.earn.earnmoney.Service.StoreService;
 import com.earn.earnmoney.model.CardProduct;
 import com.earn.earnmoney.model.CardPurchase;
+import com.earn.earnmoney.model.OrderReport;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -146,6 +147,28 @@ public class AdminStoreController {
             Map<String, String> response = new HashMap<>();
             response.put("message", "تم تحرير النقاط للبائع بنجاح");
             return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Admin: Get Reports
+    @GetMapping("/reports")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<OrderReport>> getReports(@RequestParam(required = false) String status) {
+        return ResponseEntity.ok(storeService.getReports(status));
+    }
+
+    // Admin: Resolve Report
+    @PostMapping("/reports/{id}/resolve")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> resolveReport(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String decision = body.get("decision");
+        String comment = body.getOrDefault("comment", "");
+
+        try {
+            storeService.resolveReport(id, decision, comment);
+            return ResponseEntity.ok(Map.of("message", "تم حل البلاغ بنجاح"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

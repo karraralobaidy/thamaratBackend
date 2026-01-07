@@ -60,6 +60,11 @@ public class UserAuthServiceImpl implements UserAuthService {
         userRepo.delete(user);
     }
 
+    public void softDelete(UserAuth user) {
+        user.setDeleted(true);
+        userRepo.save(user);
+    }
+
     @Override
     public Boolean existsByUsername(String username) {
         return userRepo.existsByUsername(username);
@@ -168,6 +173,11 @@ public class UserAuthServiceImpl implements UserAuthService {
         image.setImage(ImageUtilities.compressImage(file.getBytes()));
         user.setProfileImage(image);
         return userRepo.save(user);
+    }
+
+    @Override
+    public Page<UserAuth> findByReferralCodeFriend(String referralCodeFriend, Pageable pageable) {
+        return userRepo.findByReferralCodeFriend(referralCodeFriend, pageable);
     }
 
 }

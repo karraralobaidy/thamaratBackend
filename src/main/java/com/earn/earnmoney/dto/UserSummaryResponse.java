@@ -18,4 +18,8 @@ public class UserSummaryResponse {
     private String referralCode;
     private int numberOfReferral;
     private Set<String> roles;
+    private long activeCounters;
+    private double totalWithdrawn;
+    private boolean isPaidUser;
+    private Long imageId;
 }

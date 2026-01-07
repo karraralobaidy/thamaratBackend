@@ -77,6 +77,7 @@ public class WebSecurityConfig {
                 .antMatchers("/api/marketplace/getimage/**").permitAll()
                 .antMatchers("/api/agents/getimage/**").permitAll()
                 .antMatchers("/api/profile/image/**").permitAll()
+                .antMatchers("/api/users/profileimage/**").permitAll()
                 .antMatchers("/api/users/register").permitAll()
                 .antMatchers("/api/users/activecode/**").permitAll()
                 .antMatchers("/api/users/checkactivecode/**").permitAll()

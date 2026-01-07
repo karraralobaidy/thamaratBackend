@@ -5,6 +5,8 @@ import com.earn.earnmoney.model.UserAuth;
 import com.earn.earnmoney.model.UserCounter;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -28,5 +30,10 @@ public interface UserCounterRepo extends JpaRepository<UserCounter, Long> {
         List<UserCounter> findByUserAndCounter(UserAuth user, Counter counter);
 
         boolean existsByCounter(Counter counter);
+
+        long countByUser(UserAuth user);
+
+        @Query("SELECT CASE WHEN COUNT(uc) > 0 THEN true ELSE false END FROM UserCounter uc WHERE uc.user = :user AND uc.counter.price > 0")
+        boolean existsPaidCounter(@Param("user") UserAuth user);
 
 }

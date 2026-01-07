@@ -55,6 +55,7 @@ public class CounterService {
         packageRepo.findByCounterAndLevel(counter, 1).ifPresent(pkg -> {
             dto.setPointsPerClick(pkg.getPointsPerClick());
         });
+        dto.setDurationDays(counter.getDurationDays());
 
         return dto;
     }
@@ -83,7 +84,10 @@ public class CounterService {
         uc.setUser(user);
         uc.setCounter(counter);
         uc.setCurrentPackage(basePackage);
-        uc.setExpireAt(LocalDateTime.now().plusYears(1)); // اشتراك لمدة سنة
+        uc.setCounter(counter);
+        uc.setCurrentPackage(basePackage);
+        long duration = counter.getDurationDays() != null ? counter.getDurationDays() : 730;
+        uc.setExpireAt(LocalDateTime.now().plusDays(duration));
 
         userRepo.save(user);
         userCounterRepo.save(uc);
@@ -376,6 +380,7 @@ public class CounterService {
                 dto.setPointsPerClick(pkg.getPointsPerClick());
                 // dto.setUpgradeCost(pkg.getUpgradeCost()); // تم الإلغاء
             });
+            dto.setDurationDays(counter.getDurationDays());
 
             return dto;
         });
@@ -388,7 +393,10 @@ public class CounterService {
         counter.setCooldownHours(request.getCooldownHours());
         counter.setPrice(request.getPrice());
         counter.setPaid(request.isPaid());
+        counter.setPrice(request.getPrice());
+        counter.setPaid(request.isPaid());
         counter.setActive(request.isActive());
+        counter.setDurationDays(request.getDurationDays() != null ? request.getDurationDays() : 730L);
 
         Counter savedCounter = counterRepo.save(counter);
 
@@ -414,7 +422,12 @@ public class CounterService {
         counter.setCooldownHours(request.getCooldownHours());
         counter.setPrice(request.getPrice());
         counter.setPaid(request.isPaid());
+        counter.setPrice(request.getPrice());
+        counter.setPaid(request.isPaid());
         counter.setActive(request.isActive());
+        if (request.getDurationDays() != null) {
+            counter.setDurationDays(request.getDurationDays());
+        }
 
         Counter savedCounter = counterRepo.save(counter);
 

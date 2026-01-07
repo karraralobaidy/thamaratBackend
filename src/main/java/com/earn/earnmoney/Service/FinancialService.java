@@ -1,14 +1,12 @@
 package com.earn.earnmoney.Service;
 
 import com.earn.earnmoney.model.LogTransaction;
-import com.earn.earnmoney.model.UserAuth;
 import com.earn.earnmoney.model.Withdraw;
-import com.earn.earnmoney.payload.request.TransferRequest;
+import com.earn.earnmoney.model.UserAuth;
 import com.earn.earnmoney.payload.request.WithdrawRequest;
 import com.earn.earnmoney.repo.LogTransactionRepo;
 import com.earn.earnmoney.repo.UserAuthRepo;
 import com.earn.earnmoney.repo.WithdrawRepo;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,112 +16,204 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class FinancialService {
 
-    private final UserAuthRepo userRepo;
     private final WithdrawRepo withdrawRepo;
+    private final UserAuthRepo userRepo;
     private final LogTransactionRepo logRepo;
 
-    @Transactional
-    public void requestWithdraw(UserAuth user, WithdrawRequest request) {
-        long amount = (long) request.getAmount();
-
-        if (amount <= 0) {
-            throw new RuntimeException("المبلغ يجب أن يكون أكبر من صفر");
-        }
-
-        if (user.getPoints() < amount) {
-            throw new RuntimeException("رصيد النقاط غير كافي حالياً");
-        }
-
-        // لا نقوم بخصم النقاط هنا بناءً على طلب المستخدم، سيتم الخصم عند الموافقة فقط
-        // user.setPoints(user.getPoints() - amount);
-        // userRepo.save(user);
-
-        // إنشاء طلب السحب
-        Withdraw withdraw = new Withdraw();
-        withdraw.setAmount(amount);
-        withdraw.setWallet(request.getWalletNumber());
-        withdraw.setKindWallet(request.getPaymentMethod()); // Zain Cash or Mastercard
-        withdraw.setUser(user.getUsername());
-        withdraw.setUserId(user.getId()); // Set ID
-        withdraw.setUserFullName(user.getFull_name() != null ? user.getFull_name() : user.getUsername());
-        withdraw.setDate(LocalDate.now());
-        withdraw.setStateWithdraw(false); // قيد الانتظار
-        withdraw.setKindWithdraw("POINTS"); // نوع السحب نقاط
-
-        withdrawRepo.save(withdraw);
-
-        // تسجيل العملية (كطلب سحب فقط)
-        logTransaction(user, "WITHDRAW_REQUEST",
-                "طلب سحب " + amount + " نقاط عبر " + request.getPaymentMethod() + " (في انتظار الموافقة)",
-                (double) user.getPoints(),
-                (double) user.getPoints());
+    public FinancialService(WithdrawRepo withdrawRepo, UserAuthRepo userRepo, LogTransactionRepo logRepo) {
+        this.withdrawRepo = withdrawRepo;
+        this.userRepo = userRepo;
+        this.logRepo = logRepo;
     }
 
     @Transactional
-    public void transferPoints(UserAuth sender, TransferRequest request) {
-        long amount = (long) request.getAmount();
+    public String requestWithdrawal(WithdrawRequest request, String username) {
+        try {
+            // Validate amount limits
+            if (request.getAmount() < 50000) {
+                return "الحد الأدنى للسحب هو 50,000 نقطة";
+            }
+            if (request.getAmount() > 25000000) {
+                return "الحد الأقصى للسحب هو 25,000,000 نقطة";
+            }
 
-        if (amount <= 0) {
-            throw new RuntimeException("المبلغ يجب أن يكون أكبر من صفر");
+            // Find user
+            var userOpt = userRepo.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                return "المستخدم غير موجود";
+            }
+
+            var user = userOpt.get();
+
+            // Check if user has enough points
+            if (user.getPoints() < request.getAmount()) {
+                return "رصيدك غير كافي";
+            }
+
+            // Check for existing pending withdrawals
+            long pendingCount = withdrawRepo.countByUserIdAndStatus(
+                    user.getId(),
+                    com.earn.earnmoney.model.WithdrawStatus.PENDING);
+
+            if (pendingCount > 0) {
+                return "يجب أن تنتظر لحين الموافقة على طلبك الأول";
+            }
+
+            // Calculate 2% fee
+            double fee = request.getAmount() * 0.02;
+
+            // Create withdrawal
+            Withdraw withdraw = new Withdraw();
+            withdraw.setAmount(request.getAmount());
+            withdraw.setFee(fee);
+            withdraw.setWallet(request.getWalletNumber());
+            withdraw.setKindWallet(request.getPaymentMethod());
+            withdraw.setCardHolderName(request.getCardHolderName());
+            withdraw.setDate(LocalDate.now());
+            withdraw.setKindWithdraw("Points");
+            withdraw.setUser(username);
+            withdraw.setUserFullName(user.getFull_name());
+            withdraw.setUserId(user.getId());
+            withdraw.setStatus(com.earn.earnmoney.model.WithdrawStatus.PENDING);
+            withdraw.setStateWithdraw(false);
+
+            withdrawRepo.save(withdraw);
+
+            // Log transaction - withdrawal request submitted
+            double currentBalance = user.getPoints().doubleValue();
+            logTransaction(user, "WITHDRAW_REQUEST",
+                    String.format("تم تقديم طلب سحب بمبلغ %.0f نقطة عبر %s (قيد المراجعة)",
+                            request.getAmount(), request.getPaymentMethod()),
+                    currentBalance, currentBalance);
+
+            return "تم تقديم طلب السحب بنجاح. سيتم معالجته قريباً";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "حدث خطأ أثناء معالجة طلبك: " + e.getMessage();
         }
-
-        if (sender.getPoints() < amount) {
-            throw new RuntimeException("رصيد النقاط غير كافي");
-        }
-
-        if (sender.getUsername().equalsIgnoreCase(request.getIdentifier()) ||
-                sender.getReferralCode().equals(request.getIdentifier())) {
-            throw new RuntimeException("لا يمكن التحويل لنفس الحساب");
-        }
-
-        // البحث عن المستلم (كود الإحالة فقط)
-        UserAuth recipient = userRepo.findByReferralCode(request.getIdentifier())
-                .orElseThrow(() -> new RuntimeException("المستخدم المستلم غير موجود أو كود الإحالة غير صحيح"));
-
-        // خصم من المرسل
-        sender.setPoints(sender.getPoints() - amount);
-        userRepo.save(sender);
-
-        // إضافة للمستلم
-        recipient.setPoints(recipient.getPoints() + amount);
-        userRepo.save(recipient);
-
-        // تسجيل العملية للمرسل
-        String recipientDisplayName = recipient.getFull_name() != null ? recipient.getFull_name()
-                : recipient.getUsername();
-        logTransaction(sender, "TRANSFER_SENT",
-                "إرسال " + amount + " نقاط إلى " + recipientDisplayName,
-                (double) (sender.getPoints() + amount),
-                (double) sender.getPoints());
-
-        // تسجيل العملية للمستلم
-        String senderDisplayName = sender.getFull_name() != null ? sender.getFull_name() : sender.getUsername();
-        logTransaction(recipient, "TRANSFER_RECEIVED",
-                "استلام " + amount + " نقاط من " + senderDisplayName,
-                (double) (recipient.getPoints() - amount),
-                (double) recipient.getPoints());
     }
 
-    // --- Admin Methods ---
+    public Optional<Withdraw> getWithdrawById(Long id) {
+        return withdrawRepo.findById(id);
+    }
 
     @Transactional
-    public Page<Withdraw> getAllPendingWithdrawals(int page, int size) {
+    public String approveWithdrawal(Long withdrawId, String adminUsername) {
+        try {
+            var withdrawOpt = withdrawRepo.findById(withdrawId);
+            if (withdrawOpt.isEmpty()) {
+                return "طلب السحب غير موجود";
+            }
+
+            Withdraw withdraw = withdrawOpt.get();
+
+            if (withdraw.getStatus() != com.earn.earnmoney.model.WithdrawStatus.PENDING) {
+                return "لا يمكن الموافقة على هذا الطلب. الحالة الحالية: " + withdraw.getStatus();
+            }
+
+            // Find user
+            var userOpt = userRepo.findByUsername(withdraw.getUser());
+            if (userOpt.isEmpty()) {
+                return "المستخدم غير موجود";
+            }
+
+            var user = userOpt.get();
+
+            // Verify user still has enough points
+            if (user.getPoints() < withdraw.getAmount()) {
+                return "رصيد المستخدم غير كافي";
+            }
+
+            // Deduct points
+            double previousBalance = user.getPoints().doubleValue();
+            user.setPoints(user.getPoints() - (long) withdraw.getAmount());
+            double newBalance = user.getPoints().doubleValue();
+            userRepo.save(user);
+
+            // Update withdrawal status
+            withdraw.setStatus(com.earn.earnmoney.model.WithdrawStatus.APPROVED);
+            withdraw.setStateWithdraw(true);
+            withdrawRepo.save(withdraw);
+
+            // Log transaction
+            logTransaction(user, "WITHDRAW_APPROVED",
+                    String.format("تمت الموافقة على طلب سحب بمبلغ %.0f نقطة عبر %s",
+                            withdraw.getAmount(), withdraw.getKindWallet()),
+                    previousBalance, newBalance);
+
+            return "تمت الموافقة على طلب السحب وخصم النقاط بنجاح";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "حدث خطأ أثناء الموافقة: " + e.getMessage();
+        }
+    }
+
+    @Transactional
+    public String rejectWithdrawal(Long withdrawId, String reason, String adminUsername) {
+        try {
+            var withdrawOpt = withdrawRepo.findById(withdrawId);
+            if (withdrawOpt.isEmpty()) {
+                return "طلب السحب غير موجود";
+            }
+
+            Withdraw withdraw = withdrawOpt.get();
+
+            if (withdraw.getStatus() != com.earn.earnmoney.model.WithdrawStatus.PENDING) {
+                return "لا يمكن رفض هذا الطلب. الحالة الحالية: " + withdraw.getStatus();
+            }
+
+            // Find user for logging
+            var userOpt = userRepo.findByUsername(withdraw.getUser());
+
+            // Update withdrawal status
+            withdraw.setStatus(com.earn.earnmoney.model.WithdrawStatus.REJECTED);
+            withdraw.setReason(reason);
+            withdraw.setStateWithdraw(false);
+            withdrawRepo.save(withdraw);
+
+            // Log transaction (if user found)
+            if (userOpt.isPresent()) {
+                var user = userOpt.get();
+                double currentBalance = user.getPoints().doubleValue();
+                logTransaction(user, "WITHDRAW_REJECTED",
+                        String.format("تم رفض طلب سحب بمبلغ %.0f نقطة. السبب: %s",
+                                withdraw.getAmount(), reason),
+                        currentBalance, currentBalance);
+            }
+
+            return "تم رفض طلب السحب";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "حدث خطأ أثناء الرفض: " + e.getMessage();
+        }
+    }
+
+    @Transactional
+    public Page<Withdraw> getAllWithdrawals(int page, int size, String statusStr) {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
-            Page<Withdraw> withdrawals = withdrawRepo.findByStateWithdrawFalse(pageable);
 
-            // Populate userId if null (Backward Compatibility)
+            com.earn.earnmoney.model.WithdrawStatus status;
+            try {
+                status = com.earn.earnmoney.model.WithdrawStatus.valueOf(statusStr.toUpperCase());
+            } catch (Exception e) {
+                status = com.earn.earnmoney.model.WithdrawStatus.PENDING;
+            }
+
+            Page<Withdraw> withdrawals = withdrawRepo.findByStatus(status, pageable);
+
+            // Populate userId if null (Safety check)
             withdrawals.forEach(w -> {
                 if (w.getUserId() == null && w.getUser() != null) {
-                    userRepo.findByUsername(w.getUser()).ifPresent(u -> {
-                        w.setUserId(u.getId());
-                        withdrawRepo.save(w); // Persist backend fill
-                    });
+                    userRepo.findByUsername(w.getUser()).ifPresent(u -> w.setUserId(u.getId()));
                 }
             });
 
@@ -134,62 +224,32 @@ public class FinancialService {
         }
     }
 
-    @Transactional
-    public void approveWithdraw(Long withdrawId) {
-        Withdraw withdraw = withdrawRepo.findById(withdrawId)
-                .orElseThrow(() -> new RuntimeException("الطلب غير موجود"));
+    public Page<Withdraw> getUserWithdrawals(Long userId, int page, int size) {
+        try {
+            var userOpt = userRepo.findById(userId);
+            if (userOpt.isEmpty()) {
+                throw new RuntimeException("المستخدم غير موجود");
+            }
 
-        if (withdraw.isStateWithdraw()) {
-            throw new RuntimeException("الطلب معالج مسبقاً");
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
+            return withdrawRepo.findWithdrawPageByUser(userOpt.get().getUsername(), pageable);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("فشل تحميل سحوبات المستخدم: " + e.getMessage());
         }
-
-        // إيجاد المستخدم وخصم النقاط عند الموافقة
-        UserAuth user = userRepo.findByUsername(withdraw.getUser())
-                .orElseThrow(() -> new RuntimeException("المستخدم صاحب الطلب غير موجود"));
-
-        long amount = (long) withdraw.getAmount();
-        if (user.getPoints() < amount) {
-            throw new RuntimeException("فشل الموافقة: رصيد المستخدم غير كافي (" + user.getPoints() + " نقطة)");
-        }
-
-        // خصم النقاط فعلياً
-        double prevBalance = (double) user.getPoints();
-        user.setPoints(user.getPoints() - amount);
-        userRepo.save(user);
-
-        withdraw.setStateWithdraw(true);
-        withdrawRepo.save(withdraw);
-
-        // تسجيل العملية
-        logTransaction(user, "WITHDRAW_APPROVED",
-                "تمت الموافقة على طلب سحب: " + withdraw.getId() + " وخصم " + amount + " نقطة",
-                prevBalance,
-                (double) user.getPoints());
     }
 
-    @Transactional
-    public void rejectWithdraw(Long withdrawId, String reason) {
-        Withdraw withdraw = withdrawRepo.findById(withdrawId)
-                .orElseThrow(() -> new RuntimeException("الطلب غير موجود"));
-
-        if (withdraw.isStateWithdraw()) {
-            throw new RuntimeException("الطلب معالج مسبقاً (ربما تمت الموافقة عليه)");
+    public Double getTotalWithdrawnAmount(Long userId) {
+        try {
+            return withdrawRepo.sumAmountByUser(userId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0.0;
         }
-
-        // في النظام الجديد، لا نعيد النقاط لأنها لم تُخصم أصلاً عند الطلب
-        UserAuth user = userRepo.findByUsername(withdraw.getUser())
-                .orElseThrow(() -> new RuntimeException("المستخدم صاحب الطلب غير موجود"));
-
-        // نقوم بحذف الطلب ليختفي من قائمة الانتظار بناءً على طلب المستخدم
-        withdrawRepo.delete(withdraw);
-
-        // تسجيل العملية
-        logTransaction(user, "WITHDRAW_REJECTED",
-                "تم رفض طلب السحب: " + reason,
-                (double) user.getPoints(),
-                (double) user.getPoints());
     }
 
+    // Helper method to log transactions
     private void logTransaction(UserAuth user, String type, String desc, Double prevBalance, Double newBalance) {
         LogTransaction log = new LogTransaction();
         log.setUserId(user.getId());

@@ -28,10 +28,11 @@ public class FinancialController {
 
     @PostMapping("/withdraw")
     public ResponseEntity<?> requestWithdraw(@RequestBody WithdrawRequest request) {
-        financialService.requestWithdraw(getCurrentUser(), request);
+        UserAuth user = getCurrentUser();
+        String result = financialService.requestWithdrawal(request, user.getUsername());
 
         Map<String, String> response = new HashMap<>();
-        response.put("message", "تم استلام طلب السحب بنجاح");
+        response.put("message", result);
         return ResponseEntity.ok(response);
     }
 

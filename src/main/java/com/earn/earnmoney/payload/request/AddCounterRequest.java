@@ -9,6 +9,7 @@ public class AddCounterRequest {
     private Long price;
     private boolean paid;
     private boolean active;
+    private Long durationDays;
 
     // حقول إضافية لإنشاء المستوى الأول
     private int pointsPerClick;

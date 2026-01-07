@@ -1,6 +1,5 @@
 package com.earn.earnmoney.controller;
 
-
 import com.earn.earnmoney.Service.*;
 import com.earn.earnmoney.model.*;
 import com.earn.earnmoney.util.ImageUtilities;
@@ -35,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-
 @RestController
 @RequestMapping("/api/userimage")
 @RequiredArgsConstructor
@@ -44,7 +42,6 @@ public class UserImageController {
     private final UserImageService userImageService;
     private final ImageServiceImpl imageService;
     ImageUtilities imageUtilities;
-
 
     @Autowired
     public void checkFileUpload() {
@@ -58,15 +55,15 @@ public class UserImageController {
         }
     }
 
-    @PostMapping(path = "/v1/add", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @PostMapping(path = "/v1/add", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     @ResponseBody
     public ResponseEntity<String> createUserImage(
             @RequestPart(value = "userImage", required = false) MultipartFile userImage) throws IOException {
         String message;
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication(); //get username is login
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication(); // get username is
+                                                                                                    // login
             if (userImage != null) {
-
 
                 UserImage userImageFind = userImageService.getImageByUserName(authentication.getName()).orElse(null);
 
@@ -83,7 +80,8 @@ public class UserImageController {
                     userImageObject.setUserImage(img);
                     userImageService.saveUserImage(userImageObject);
                 } else {
-                    Image image = imageService.findImageById(userImageFind.getUserImage().getId().describeConstable().orElse(null));
+                    Image image = imageService
+                            .findImageById(userImageFind.getUserImage().getId().describeConstable().orElse(null));
                     Path imagePath = Path.of("uploads/" + image.getName());
                     if (Files.exists(imagePath)) {
                         File imageFile = new File(imagePath.toUri()); // إنشاء كائن من نوع File
@@ -123,17 +121,22 @@ public class UserImageController {
 
     @GetMapping("/getimage/{imageId}")
     public ResponseEntity<InputStreamResource> showImage(@PathVariable Long imageId) {
+        System.out.println("Requesting image with ID: " + imageId);
         Image image = imageService.findImageById(imageId);
 
         if (image == null) {
+            System.out.println("Image not found in database for ID: " + imageId);
             // إذا لم يتم العثور على الصورة، يمكنك إرجاع رد خطأ مناسب
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
+
+        System.out.println("Image found in DB: " + image.getName() + ", Type: " + image.getType());
 
         try {
             MediaType mediaType = getMediaType(image.getType());
 
             Path filePath = Path.of("uploads/" + image.getName());
+            System.out.println("Looking for file at: " + filePath.toAbsolutePath());
             Resource resource = new UrlResource(filePath.toUri());
 
             InputStream inputStream = resource.getInputStream();
@@ -142,8 +145,10 @@ public class UserImageController {
                     .contentType(mediaType)
                     .body(new InputStreamResource(inputStream));
         } catch (FileNotFoundException e) {
+            System.out.println("File not found: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         } catch (IOException e) {
+            System.out.println("IO Error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }

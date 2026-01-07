@@ -19,6 +19,7 @@ import io.github.bucket4j.Refill;
 import net.bytebuddy.utility.RandomString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,12 +60,19 @@ public class UsersController {
 
     private final com.earn.earnmoney.Service.CounterService counterService;
 
+    private final com.earn.earnmoney.repo.WithdrawRepo withdrawRepo;
+    private final com.earn.earnmoney.repo.UserCounterRepo userCounterRepo;
+
     public UsersController(UserAuthServiceImpl userService, RoleServiceImpl roleService, PasswordEncoder encoder,
-            com.earn.earnmoney.Service.CounterService counterService) {
+            com.earn.earnmoney.Service.CounterService counterService,
+            com.earn.earnmoney.repo.WithdrawRepo withdrawRepo,
+            com.earn.earnmoney.repo.UserCounterRepo userCounterRepo) {
         this.userService = userService;
         this.roleService = roleService;
         this.encoder = encoder;
         this.counterService = counterService;
+        this.withdrawRepo = withdrawRepo;
+        this.userCounterRepo = userCounterRepo;
         addDefaultUser();
 
     }
@@ -132,6 +140,11 @@ public class UsersController {
             Set<String> roles = new HashSet<>();
             user.getRoles().forEach(r -> roles.add(r.getName().name()));
 
+            long activeCounters = userCounterRepo.countByUser(user);
+            double totalWithdrawn = withdrawRepo.sumAmountByUser(user.getId());
+
+            boolean isPaidUser = userCounterRepo.existsPaidCounter(user);
+
             return new com.earn.earnmoney.dto.UserSummaryResponse(
                     user.getId(),
                     user.getUsername(),
@@ -141,14 +154,152 @@ public class UsersController {
                     user.getPoints(),
                     user.getReferralCode(),
                     user.getNumberOfReferral(),
-                    roles);
+                    roles,
+                    activeCounters,
+                    totalWithdrawn,
+                    isPaidUser,
+                    user.getProfileImage() != null ? user.getProfileImage().getId() : null);
         }).collect(java.util.stream.Collectors.toList());
 
         response.put("user", userSummaries);
-        response.put("pageNumber", s.getNumber());
-        response.put("totalPage", s.getTotalPages());
-        response.put("totalUser", s.getTotalElements());
-        return ResponseEntity.ok(response);
+        response.put("currentPage", s.getNumber());
+        response.put("totalItems", s.getTotalElements());
+        response.put("totalPages", s.getTotalPages());
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/profileimage/{userId}")
+    public ResponseEntity<byte[]> getUserProfileImage(@PathVariable Long userId) {
+        System.out.println("=== getUserProfileImage called for userId: " + userId);
+        try {
+            UserAuth user = userService.findById(userId);
+            System.out.println("User found: " + (user != null ? user.getUsername() : "null"));
+
+            if (user == null) {
+                System.out.println("User is null");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+
+            System.out.println("ProfileImage: " + (user.getProfileImage() != null ? "exists" : "null"));
+
+            if (user.getProfileImage() == null) {
+                System.out.println("ProfileImage is null");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+
+            System.out.println(
+                    "ProfileImage.getImage(): " + (user.getProfileImage().getImage() != null ? "exists" : "null"));
+
+            if (user.getProfileImage().getImage() == null) {
+                System.out.println("ProfileImage.getImage() is null");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+
+            Image profileImage = user.getProfileImage();
+            System.out.println("Decompressing image...");
+            byte[] imageData = com.earn.earnmoney.util.ImageUtilities.decompressImage(profileImage.getImage());
+            System.out.println("Image decompressed successfully, size: " + imageData.length);
+
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            String contentType = profileImage.getType() != null ? profileImage.getType() : "image/jpeg";
+            headers.setContentType(org.springframework.http.MediaType.parseMediaType(contentType));
+
+            return new ResponseEntity<>(imageData, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            System.out.println("ERROR in getUserProfileImage for user " + userId);
+            System.out.println("Error message: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/{id}/counters")
+    public ResponseEntity<?> getUserCounters(@PathVariable Long id) {
+        UserAuth user = userService.findById(id);
+        if (user == null) {
+            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+        }
+
+        List<com.earn.earnmoney.dto.UserCounterDetailDTO> counters = user.getCounters().stream()
+                .filter(uc -> uc.getExpireAt().isAfter(java.time.LocalDateTime.now()))
+                .map(uc -> new com.earn.earnmoney.dto.UserCounterDetailDTO(
+                        uc.getId(),
+                        uc.getCounter().getName(),
+                        uc.getExpireAt(),
+                        uc.getCounter().getDailyPoints(),
+                        uc.getCounter().getPrice()))
+                .collect(java.util.stream.Collectors.toList());
+
+        return new ResponseEntity<>(counters, HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}/referrals")
+    public ResponseEntity<?> getUserReferrals(@PathVariable Long id, Pageable pageable) {
+        UserAuth user = userService.findById(id);
+        if (user == null) {
+            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+        }
+
+        org.springframework.data.domain.Page<UserAuth> referrals = userService
+                .findByReferralCodeFriend(user.getReferralCode(), pageable);
+
+        Page<com.earn.earnmoney.dto.ReferralDetailDTO> referralDTOs = referrals.map(ref -> {
+            // Find active counter for referral
+            String activeCounterName = "Free";
+
+            // Get all counters for this user
+            List<com.earn.earnmoney.model.UserCounter> userCounters = userCounterRepo.findByUser(ref);
+
+            // Filter for paid and active counters
+            java.util.Optional<com.earn.earnmoney.model.UserCounter> paidCounter = userCounters.stream()
+                    .filter(uc -> uc.getCounter().isPaid()
+                            && uc.getExpireAt() != null
+                            && uc.getExpireAt().isAfter(java.time.LocalDateTime.now()))
+                    .findFirst(); // Get the first active paid counter, or could sort by price
+
+            if (paidCounter.isPresent()) {
+                activeCounterName = paidCounter.get().getCounter().getName();
+            }
+
+            return new com.earn.earnmoney.dto.ReferralDetailDTO(
+                    ref.getId(),
+                    ref.getUsername(),
+                    ref.getFull_name(),
+                    ref.getDate(),
+                    activeCounterName);
+        });
+
+        return new ResponseEntity<>(referralDTOs, HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}/withdrawals")
+    public ResponseEntity<?> getUserWithdrawals(@PathVariable Long id, Pageable pageable) {
+        UserAuth user = userService.findById(id);
+        if (user == null) {
+            return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+        }
+
+        // Assuming withdrawRepo stores username, not ID directly sometimes, but let's
+        // check repo
+        // The repo has sumAmountByUser(Long userId) so it likely has userId
+        // Let's check findWithdrawPageByUser
+
+        Page<com.earn.earnmoney.model.Withdraw> withdrawals = withdrawRepo.findWithdrawPageByUser(user.getUsername(),
+                pageable);
+
+        Page<com.earn.earnmoney.dto.WithdrawDetailDTO> withdrawDTOs = withdrawals
+                .map(w -> new com.earn.earnmoney.dto.WithdrawDetailDTO(
+                        w.getId(),
+                        w.getAmount(),
+                        w.isStateWithdraw(),
+                        w.getStatus() != null ? w.getStatus().name() : "PENDING",
+                        w.getReason(),
+                        w.getDate(),
+                        w.getKindWithdraw(),
+                        w.getWallet()));
+
+        return new ResponseEntity<>(withdrawDTOs, HttpStatus.OK);
     }
 
     @GetMapping("/v1/all2")
@@ -161,7 +312,7 @@ public class UsersController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Boolean>> deleteUser(@PathVariable Long id) {
         UserAuth user = userService.findById(id);
-        userService.delete(user);
+        userService.softDelete(user);
         Map<String, Boolean> response = new HashMap<>();
         response.put("deleted", Boolean.TRUE);
         return ResponseEntity.ok(response);
@@ -404,15 +555,16 @@ public class UsersController {
                 + "<div style='max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; padding: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>"
                 + "<h2 style='color: #2c3e50; text-align: center; margin-bottom: 20px;'>إعادة تعيين كلمة المرور</h2>"
                 + "<p style='color: #555; font-size: 16px; line-height: 1.6;'>مرحباً،</p>"
-                + "<p style='color: #555; font-size: 16px; line-height: 1.6;'>لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك في تطبيق <b>ثمرات</b>.</p>"
-                + "<p style='color: #555; font-size: 16px; line-height: 1.6;'>استخدم الرمز أدناه لإكمال العملية:</p>"
+                + "<p style='color: #555; font-size: 16px; line-height: 1.6;'>لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك.</p>"
+                + "<p style='color: #555; font-size: 16px; line-height: 1.6;'>استخدم رمز التحقق التالي لإكمال العملية:</p>"
                 + "<div style='text-align: center; margin: 30px 0;'>"
-                + "<span style='display: inline-block; background-color: #e74c3c; color: #ffffff; font-size: 24px; font-weight: bold; padding: 15px 30px; border-radius: 5px; letter-spacing: 2px;'>"
+                + "<span style='display: inline-block; background-color: #e74c3c; color: #ffffff; font-size: 32px; font-weight: bold; padding: 15px 30px; border-radius: 8px; letter-spacing: 5px; font-family: monospace;'>"
                 + link + "</span>"
                 + "</div>"
+                + "<p style='color: #555; font-size: 14px; text-align: center; margin-bottom: 20px;'>هذا الرمز صالح لفترة محدودة.</p>"
                 + "<p style='color: #7f8c8d; font-size: 14px; text-align: center;'>إذا لم تقم بطلب هذا التغيير، يرجى تجاهل هذا البريد الإلكتروني.</p>"
                 + "<hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'>"
-                + "<p style='color: #aaa; font-size: 12px; text-align: center;'>فريق دعم ثمرات &copy; 2025</p>"
+                + "<p style='color: #aaa; font-size: 12px; text-align: center;'>فريق دعم ثمرات &copy; 2026</p>"
                 + "</div></div>";
 
         helper.setSubject(subject);
@@ -442,7 +594,7 @@ public class UsersController {
                 + "</div>"
                 + "<p style='color: #7f8c8d; font-size: 14px; text-align: center;'>نتمنى لك تجربة ممتعة ومربحة!</p>"
                 + "<hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'>"
-                + "<p style='color: #aaa; font-size: 12px; text-align: center;'>فريق ثمرات &copy; 2025</p>"
+                + "<p style='color: #aaa; font-size: 12px; text-align: center;'>فريق ثمرات &copy; 2026</p>"
                 + "</div></div>";
 
         helper.setSubject(subject);
@@ -553,21 +705,22 @@ public class UsersController {
     @PostMapping("/forgot_password")
     public String processForgotPassword(HttpServletRequest request, Model model) {
         String email = request.getParameter("email");
-        String token = RandomString.make(8);
+        // Generate a 6-digit random code
+        Random rand = new Random();
+        int randomNumber = 100000 + rand.nextInt(900000);
+        String token = String.valueOf(randomNumber);
 
         try {
             userService.updateResetPasswordToken(token, email);
-            // String resetPasswordLink = Utility.getSiteURL(request) + "/forgotpassword/" +
-            // token;
             sendEmail(email, token);
-            model.addAttribute("message", "We have sent a reset password link to your email. Please check.");
+            model.addAttribute("message", "We have sent a reset password code to your email. Please check.");
         } catch (Exception ex) {
             model.addAttribute("error", ex.getMessage());
         } catch (UserAuthNotFoundException e) {
             throw new RuntimeException(e);
         }
 
-        return "تم الأرسال رابط اعادة كلمة المرور بنجاح";
+        return "تم ارسال رمز التحقق الى بريدك الالكتروني";
     }
 
     @GetMapping("/reset_password")

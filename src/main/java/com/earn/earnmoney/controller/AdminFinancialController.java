@@ -22,11 +22,12 @@ public class AdminFinancialController {
     }
 
     @GetMapping("/withdrawals")
-    public ResponseEntity<Map<String, Object>> getPendingWithdrawals(
+    public ResponseEntity<Map<String, Object>> getWithdrawals(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "PENDING") String status) {
 
-        Page<Withdraw> withdrawals = financialService.getAllPendingWithdrawals(page, size);
+        Page<Withdraw> withdrawals = financialService.getAllWithdrawals(page, size, status);
 
         Map<String, Object> response = new HashMap<>();
         response.put("withdrawals", withdrawals.getContent());
@@ -39,10 +40,10 @@ public class AdminFinancialController {
 
     @PostMapping("/withdrawals/{id}/approve")
     public ResponseEntity<Map<String, String>> approveWithdraw(@PathVariable Long id) {
-        financialService.approveWithdraw(id);
+        String result = financialService.approveWithdrawal(id, "admin");
 
         Map<String, String> response = new HashMap<>();
-        response.put("message", "تمت الموافقة على الطلب بنجاح");
+        response.put("message", result);
         return ResponseEntity.ok(response);
     }
 
@@ -52,10 +53,10 @@ public class AdminFinancialController {
             @RequestBody(required = false) Map<String, String> body) {
 
         String reason = (body != null && body.containsKey("reason")) ? body.get("reason") : "تم الرفض من قبل الادارة";
-        financialService.rejectWithdraw(id, reason);
+        String result = financialService.rejectWithdrawal(id, reason, "admin");
 
         Map<String, String> response = new HashMap<>();
-        response.put("message", "تم رفض الطلب وإعادة النقاط للمستخدم");
+        response.put("message", result);
         return ResponseEntity.ok(response);
     }
 }

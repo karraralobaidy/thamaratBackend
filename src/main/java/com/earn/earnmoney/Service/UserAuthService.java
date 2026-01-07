@@ -26,6 +26,8 @@ public interface UserAuthService {
 
     void delete(UserAuth user);
 
+    void softDelete(UserAuth user);
+
     Boolean isUserActive(String username);
 
     Boolean isUserBand(String username);
@@ -46,5 +48,8 @@ public interface UserAuthService {
 
     // add new
     UserAuth updateProfileImage(Long userId, MultipartFile file) throws IOException;
+
+    Page<UserAuth> findByReferralCodeFriend(String referralCodeFriend,
+            org.springframework.data.domain.Pageable pageable);
 
 }

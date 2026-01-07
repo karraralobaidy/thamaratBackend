@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class StoreService {
 
     private final CardProductRepo cardProductRepo;
@@ -23,6 +22,21 @@ public class StoreService {
     private final UserAuthRepo userRepo;
     private final LogTransactionRepo logRepo;
     private final ImageRepo imageRepo;
+    private final OrderReportRepo reportRepo;
+
+    public StoreService(CardProductRepo cardProductRepo,
+            CardPurchaseRepo cardPurchaseRepo,
+            UserAuthRepo userRepo,
+            LogTransactionRepo logRepo,
+            ImageRepo imageRepo,
+            OrderReportRepo reportRepo) {
+        this.cardProductRepo = cardProductRepo;
+        this.cardPurchaseRepo = cardPurchaseRepo;
+        this.userRepo = userRepo;
+        this.logRepo = logRepo;
+        this.imageRepo = imageRepo;
+        this.reportRepo = reportRepo;
+    }
 
     // Get only APPROVED cards for marketplace
     public List<CardProduct> getAllAvailableCards() {
@@ -89,8 +103,8 @@ public class StoreService {
         purchase.setBuyerNotes(notes);
 
         if (card.getProductType() == CardProduct.ProductType.PHYSICAL) {
-            // ESCROW: Status is WAITING_DELIVERY. Seller gets NOTHING yet.
-            purchase.setStatus(CardPurchase.PurchaseStatus.WAITING_DELIVERY);
+            // ESCROW: Status is PENDING_APPROVAL. Seller must accept first.
+            purchase.setStatus(CardPurchase.PurchaseStatus.PENDING_APPROVAL);
             purchase.setCardCode("PENDING_DELIVERY"); // Placeholder
         } else {
             // DIGITAL: Hold funds until admin releases (same as physical)
@@ -153,6 +167,7 @@ public class StoreService {
 
         // Update Purchase Status
         purchase.setStatus(CardPurchase.PurchaseStatus.COMPLETED); // Money released
+        purchase.setFundsReleased(true);
         cardPurchaseRepo.save(purchase);
 
         // Log Transaction
@@ -215,9 +230,18 @@ public class StoreService {
 
         // Populate transient fields for frontend
         orders.forEach(p -> {
-            if (p.getCardProduct() != null) {
-                p.setCardName(p.getCardProduct().getName());
-                p.setCardPrice(p.getCardProduct().getPrice());
+            try {
+                if (p.getCardProduct() != null) {
+                    p.setCardName(p.getCardProduct().getName());
+                    p.setCardPrice(p.getCardProduct().getPrice());
+                }
+
+                if (p.getUser() != null) {
+                    p.setUsername(p.getUser().getUsername());
+                    p.setUserFullName(p.getUser().getFull_name());
+                }
+            } catch (Exception e) {
+                // Determine what to do, for now safe ignore to show list
             }
         });
 
@@ -284,7 +308,7 @@ public class StoreService {
             return allPurchases.stream()
                     // Filter: Pending OR Waiting Delivery
                     .filter(p -> p.getStatus() == CardPurchase.PurchaseStatus.PENDING
-                            || p.getStatus() == CardPurchase.PurchaseStatus.WAITING_DELIVERY)
+                            || p.getStatus() == CardPurchase.PurchaseStatus.ON_DELIVERY)
                     .peek(p -> {
                         // Populate transient fields for JSON
                         try {
@@ -348,7 +372,7 @@ public class StoreService {
         return cardPurchaseRepo.findAll().stream()
                 .filter(p -> {
                     // Physical products waiting for delivery confirmation
-                    if (p.getStatus() == CardPurchase.PurchaseStatus.WAITING_DELIVERY) {
+                    if (p.getStatus() == CardPurchase.PurchaseStatus.ON_DELIVERY) {
                         return true;
                     }
                     // Digital products that have been delivered but not completed (admin needs to
@@ -419,6 +443,29 @@ public class StoreService {
         cardPurchaseRepo.save(purchase);
     }
 
+    // Seller rejects an order (Refunds buyer)
+    @Transactional
+    public void sellerRejectOrder(UserAuth user, Long purchaseId, String reason) {
+        CardPurchase purchase = cardPurchaseRepo.findById(purchaseId)
+                .orElseThrow(() -> new RuntimeException("الطلب غير موجود"));
+
+        if (!purchase.getCardProduct().getSellerId().equals(user.getId())) {
+            throw new RuntimeException("لا تملك صلاحية تعديل هذا الطلب");
+        }
+
+        CardPurchase.PurchaseStatus current = purchase.getStatus();
+        // Allow rejection at any active stage before completion
+        if (current == CardPurchase.PurchaseStatus.PENDING_APPROVAL ||
+                current == CardPurchase.PurchaseStatus.PROCESSING ||
+                current == CardPurchase.PurchaseStatus.ON_DELIVERY) {
+
+            // Reuse reject logic (refunds points)
+            rejectPurchase(purchaseId, "Rejected by Seller: " + reason);
+        } else {
+            throw new RuntimeException("لا يمكن إلغاء الطلب في حالته الحالية: " + current);
+        }
+    }
+
     // Admin: Reject Purchase
     @Transactional
     public void rejectPurchase(Long purchaseId, String reason) {
@@ -484,9 +531,13 @@ public class StoreService {
         List<CardPurchase> purchases = cardPurchaseRepo.findByUserOrderByPurchaseDateDesc(user);
         // Populate transient fields for frontend
         purchases.forEach(p -> {
-            if (p.getCardProduct() != null) {
-                p.setCardName(p.getCardProduct().getName());
-                p.setCardPrice(p.getCardProduct().getPrice());
+            try {
+                if (p.getCardProduct() != null) {
+                    p.setCardName(p.getCardProduct().getName());
+                    p.setCardPrice(p.getCardProduct().getPrice());
+                }
+            } catch (Exception e) {
+                // Ignore transient errors
             }
         });
         return purchases;
@@ -531,9 +582,14 @@ public class StoreService {
 
     // Admin: Get All Products with Seller Details
     @Transactional(readOnly = true)
-    public List<CardProduct> getAllProductsAdmin() {
+    public List<CardProduct> getAllProductsAdmin(String search) {
         return cardProductRepo.findAll().stream()
                 .filter(p -> p.isAvailable()) // Only show available products (filter soft-deleted)
+                .filter(p -> {
+                    if (search == null || search.trim().isEmpty())
+                        return true;
+                    return p.getName().toLowerCase().contains(search.toLowerCase());
+                })
                 .peek(p -> {
                     if (p.getSellerId() != null) {
                         userRepo.findById(p.getSellerId()).ifPresent(user -> {
@@ -542,5 +598,112 @@ public class StoreService {
                     }
                 })
                 .collect(Collectors.toList());
+    }
+
+    // Seller updates order status
+    @Transactional
+    public void updateOrderStatus(UserAuth user, Long purchaseId, CardPurchase.PurchaseStatus newStatus) {
+        CardPurchase purchase = cardPurchaseRepo.findById(purchaseId)
+                .orElseThrow(() -> new RuntimeException("الطلب غير موجود"));
+
+        if (!purchase.getCardProduct().getSellerId().equals(user.getId())) {
+            throw new RuntimeException("لا تملك صلاحية تعديل هذا الطلب");
+        }
+
+        // Validate transitions
+        CardPurchase.PurchaseStatus current = purchase.getStatus();
+
+        // 1. Pending Approval -> Processing
+        if (current == CardPurchase.PurchaseStatus.PENDING_APPROVAL
+                && newStatus == CardPurchase.PurchaseStatus.PROCESSING) {
+            purchase.setStatus(newStatus);
+        }
+        // 2. Processing -> On Delivery
+        else if (current == CardPurchase.PurchaseStatus.PROCESSING
+                && newStatus == CardPurchase.PurchaseStatus.ON_DELIVERY) {
+            purchase.setStatus(newStatus);
+        }
+        // 3. On Delivery -> Delivered
+        else if (current == CardPurchase.PurchaseStatus.ON_DELIVERY
+                && newStatus == CardPurchase.PurchaseStatus.DELIVERED) {
+            purchase.setStatus(newStatus);
+        } else {
+            throw new RuntimeException("تغيير الحالة غير مسموح به من " + current + " إلى " + newStatus);
+        }
+
+        cardPurchaseRepo.save(purchase);
+    }
+
+    // Buyer files a report
+    @Transactional
+    public void fileReport(UserAuth user, Long purchaseId, String reason, String description) {
+        CardPurchase purchase = cardPurchaseRepo.findById(purchaseId)
+                .orElseThrow(() -> new RuntimeException("الطلب غير موجود"));
+
+        if (!purchase.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("هذا الطلب لا يخصك");
+        }
+
+        if (purchase.getStatus() == CardPurchase.PurchaseStatus.COMPLETED || purchase.isFundsReleased()) {
+            throw new RuntimeException("لا يمكن الإبلاغ عن طلب مكتمل وتم صرف نقاطه");
+        }
+
+        OrderReport report = new OrderReport();
+        report.setOrder(purchase);
+        report.setReporter(user);
+        report.setReason(reason);
+        report.setDescription(description);
+        report.setStatus(OrderReport.ReportStatus.PENDING);
+        reportRepo.save(report);
+
+        // Calculate Purchase Status to REPORTED to freeze flows
+        purchase.setStatus(CardPurchase.PurchaseStatus.REPORTED);
+        cardPurchaseRepo.save(purchase);
+    }
+
+    // Admin resolves a report
+    @Transactional
+    public void resolveReport(Long reportId, String decision, String adminComment) {
+        OrderReport report = reportRepo.findById(reportId)
+                .orElseThrow(() -> new RuntimeException("البلاغ غير موجود"));
+
+        CardPurchase purchase = report.getOrder();
+
+        if ("RELEASE_FUNDS".equalsIgnoreCase(decision)) {
+            // Admin sides with Seller -> Release Funds
+            adminReleasePoints(purchase.getId()); // Re-use existing logic
+
+            report.setStatus(OrderReport.ReportStatus.RESOLVED_RELEASE);
+            report.setAdminComment(adminComment);
+            reportRepo.save(report);
+
+        } else if ("REFUND_BUYER".equalsIgnoreCase(decision)) {
+            // Admin sides with Buyer -> Refund
+            rejectPurchase(purchase.getId(), "Report Resolved: " + adminComment); // Re-use logic
+
+            // RejectPurchase sets status to REJECTED/CANCELLED.
+            // We should ensure status is CANCELLED for semantics if needed, but REJECTED is
+            // fine.
+
+            report.setStatus(OrderReport.ReportStatus.RESOLVED_REFUND);
+            report.setAdminComment(adminComment);
+            reportRepo.save(report);
+
+        } else {
+            throw new IllegalArgumentException("قرار غير معروف: " + decision);
+        }
+    }
+
+    // Admin: Get Reports
+    @Transactional(readOnly = true)
+    public List<OrderReport> getReports(String status) {
+        if (status != null && !status.isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            try {
+                return reportRepo.findByStatus(OrderReport.ReportStatus.valueOf(status.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                return List.of();
+            }
+        }
+        return reportRepo.findAll();
     }
 }

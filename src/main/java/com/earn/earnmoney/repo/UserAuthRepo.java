@@ -14,16 +14,16 @@ import java.util.Optional;
 
 @Repository
 public interface UserAuthRepo extends JpaRepository<UserAuth, Long> {
-    String Find_users = "SELECT id, full_name , username , points,referral_code,active,band FROM usersauth ";
+    String Find_users = "SELECT id, full_name , username , points,referral_code,active,band FROM usersauth WHERE deleted = false";
     String Find_userActive = "SELECT id, username,active FROM users ";
 
     @Query(value = Find_users, nativeQuery = true)
     List<Object[]> findUsersWithoutPassword();
 
-    @Query("SELECT r FROM UserAuth r WHERE r.username LIKE %:query% OR r.full_name LIKE %:query% OR r.referralCode LIKE %:query% OR CAST(r.points AS string) LIKE %:query%")
+    @Query("SELECT r FROM UserAuth r WHERE (r.username LIKE %:query% OR r.full_name LIKE %:query% OR r.referralCode LIKE %:query% OR CAST(r.points AS string) LIKE %:query%) AND r.deleted = false")
     Page<UserAuth> findAllByQuery(@Param("query") String query, Pageable pageable);
 
-    @Query("SELECT r.full_name,r.username,r.points,r.active,r.band , r.id ,r.date FROM UserAuth r ")
+    @Query("SELECT r.full_name,r.username,r.points,r.active,r.band , r.id ,r.date FROM UserAuth r WHERE r.deleted = false")
     List<Object[]> getAllUser();
 
     Optional<UserAuth> findByUsername(String username);
@@ -45,5 +45,7 @@ public interface UserAuthRepo extends JpaRepository<UserAuth, Long> {
     Optional<UserAuth> findByReferralCode(String referralCodeFriend);
 
     Boolean existsByUsernameAndPassword(String username, String password);
+
+    Page<UserAuth> findByReferralCodeFriend(String referralCodeFriend, Pageable pageable);
 
 }

@@ -29,6 +29,8 @@ public class Counter {
     @Column(name = "daily_points")
     private Long dailyPoints = 100L;
 
+    private Long durationDays = 730L; // Default 2 years
+
     private boolean active;
 
     @Override
