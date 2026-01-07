@@ -1,5 +1,11 @@
 HELP.md
+PROJECT_DOCS_AR.md
+SWAGGER_GUIDE.md
 target/
+
+### Uploads and Local Files ###
+uploads/
+local.session.sql
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
