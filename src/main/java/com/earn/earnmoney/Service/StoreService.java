@@ -779,8 +779,9 @@ public class StoreService {
             try {
                 // Buyer Details
                 if (report.getOrder() != null && report.getOrder().getUser() != null) {
-                    report.setBuyerName(report.getOrder().getUser().getUsername());
-                    report.setBuyerEmail(report.getOrder().getUser().getEmail());
+                    report.setBuyerName(report.getOrder().getUser().getFull_name());
+                    // UserAuth doesn't have email field, using username as fallback
+                    report.setBuyerEmail(report.getOrder().getUser().getUsername());
                 }
 
                 // Seller Details
@@ -788,8 +789,8 @@ public class StoreService {
                     Long sellerId = report.getOrder().getCardProduct().getSellerId();
                     if (sellerId != null) {
                         userRepo.findById(sellerId).ifPresent(seller -> {
-                            report.setSellerName(seller.getUsername());
-                            report.setSellerEmail(seller.getEmail());
+                            report.setSellerName(seller.getFull_name());
+                            report.setSellerEmail(seller.getUsername());
                         });
                     }
                 }
