@@ -248,6 +248,61 @@ public class StoreService {
         return orders;
     }
 
+    // Seller updates their own listing
+    @Transactional
+    public CardProduct updateUserListing(UserAuth user, Long cardId, String name, Long price,
+            String category, Integer quantity, MultipartFile file) throws IOException {
+        if (cardId == null) {
+            throw new IllegalArgumentException("cardId cannot be null");
+        }
+        CardProduct card = cardProductRepo.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("المنتج غير موجود"));
+
+        if (!card.getSellerId().equals(user.getId())) {
+            throw new RuntimeException("لا تملك صلاحية تعديل هذا المنتج");
+        }
+
+        // Cannot edit approved products that have been sold
+        if (card.getSoldQuantity() > 0) {
+            // Only allow quantity increase
+            if (quantity != null && quantity < card.getTotalQuantity()) {
+                throw new RuntimeException("لا يمكن تقليل الكمية لمنتج تم بيع جزء منه");
+            }
+        }
+
+        // Update fields
+        if (name != null && !name.trim().isEmpty()) {
+            card.setName(name);
+        }
+        if (price != null && price >= 0) {
+            card.setPrice(price);
+        }
+        if (category != null && !category.trim().isEmpty()) {
+            card.setCategory(category);
+        }
+        if (quantity != null && quantity >= card.getSoldQuantity()) {
+            card.setTotalQuantity(quantity);
+        }
+
+        // Update image if provided
+        if (file != null && !file.isEmpty()) {
+            Image image = card.getImage();
+            if (image == null) {
+                image = new Image();
+            }
+            image.setName(file.getOriginalFilename());
+            image.setType(file.getContentType());
+            image.setImage(ImageUtilities.compressImage(file.getBytes()));
+            card.setImage(image);
+        }
+
+        // Reset approval status to PENDING for any edit to require admin re-approval
+        card.setApprovalStatus(CardProduct.ApprovalStatus.PENDING);
+        card.setRejectionReason(null);
+
+        return cardProductRepo.save(card);
+    }
+
     // Seller deletes their own listing
     @Transactional
     public void deleteUserListing(UserAuth user, Long cardId) {

@@ -476,4 +476,38 @@ public class CounterService {
         log.setTransactionDate(LocalDateTime.now());
         logRepo.save(log);
     }
+
+    // Get user's counter subscriptions with details
+    public List<com.earn.earnmoney.dto.UserCounterSubscriptionDTO> getUserCounterSubscriptions(UserAuth user) {
+        List<UserCounter> userCounters = userCounterRepo.findByUser(user);
+        LocalDateTime now = LocalDateTime.now();
+
+        return userCounters.stream().map(uc -> {
+            com.earn.earnmoney.dto.UserCounterSubscriptionDTO dto = new com.earn.earnmoney.dto.UserCounterSubscriptionDTO();
+            dto.setId(uc.getId());
+            dto.setCounterId(uc.getCounter().getId());
+            dto.setCounterName(uc.getCounter().getName());
+
+            // Determine start date (use lastClickedAt or expireAt - duration)
+            LocalDateTime startDate = uc.getExpireAt();
+            if (startDate != null && uc.getCounter().getDurationDays() != null) {
+                startDate = uc.getExpireAt().minusDays(uc.getCounter().getDurationDays());
+            }
+            dto.setStartDate(startDate);
+            dto.setEndDate(uc.getExpireAt());
+
+            // Get daily points from package
+            Integer dailyPoints = uc.getCurrentPackage() != null ? uc.getCurrentPackage().getPointsPerClick() : 0;
+            dto.setDailyPoints(dailyPoints);
+
+            // Determine status
+            boolean isExpired = uc.getExpireAt() != null && now.isAfter(uc.getExpireAt());
+            dto.setStatus(isExpired ? "EXPIRED" : "ACTIVE");
+
+            // Set if paid counter
+            dto.setPaid(uc.getCounter().isPaid());
+
+            return dto;
+        }).collect(java.util.stream.Collectors.toList());
+    }
 }

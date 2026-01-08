@@ -284,6 +284,30 @@ public class StoreController {
         }
     }
 
+    // Seller updates their own listing
+    @PutMapping(value = "/my-listings/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateMyListing(
+            @PathVariable Long id,
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "price", required = false) Long price,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "quantity", required = false) Integer quantity,
+            @RequestParam(value = "image", required = false) org.springframework.web.multipart.MultipartFile image) {
+        try {
+            CardProduct updated = storeService.updateUserListing(getCurrentUser(), id, name, price,
+                    category, quantity, image);
+            if (updated.getImage() != null) {
+                updated.getImage().setImage(null); // Clear binary data
+            }
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "تم تحديث المنتج بنجاح");
+            response.put("listing", updated);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // Seller deletes their own listing
     @DeleteMapping("/my-listings/{id}")
     public ResponseEntity<?> deleteMyListing(@PathVariable Long id) {

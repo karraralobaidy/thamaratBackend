@@ -47,6 +47,12 @@ public class CounterController {
         return counterService.handleAction(getCurrentUser());
     }
 
+    // 📋 الحصول على تفاصيل الاشتراكات
+    @GetMapping("/my-subscriptions")
+    public List<com.earn.earnmoney.dto.UserCounterSubscriptionDTO> getMySubscriptions() {
+        return counterService.getUserCounterSubscriptions(getCurrentUser());
+    }
+
     private UserAuth getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
