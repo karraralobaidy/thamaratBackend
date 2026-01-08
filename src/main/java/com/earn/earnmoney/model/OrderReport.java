@@ -56,4 +56,13 @@ public class OrderReport {
         RESOLVED_RELEASE, // Admin decided to release funds to seller
         REJECTED // Report rejected (maybe invalid)
     }
+
+    @Transient
+    private String sellerName;
+    @Transient
+    private String sellerEmail;
+    @Transient
+    private String buyerName;
+    @Transient
+    private String buyerEmail;
 }

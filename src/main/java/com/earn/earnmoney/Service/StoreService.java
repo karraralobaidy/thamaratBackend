@@ -269,9 +269,7 @@ public class StoreService {
         if (quantity == null || quantity <= 0) {
             throw new RuntimeException("الكمية مطلوبة ويجب أن تكون أكبر من صفر");
         }
-        if (file == null || file.isEmpty()) {
-            throw new RuntimeException("صورة المنتج مطلوبة");
-        }
+        // Image is optional for updates - user can keep existing image
 
         CardProduct card = cardProductRepo.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("المنتج غير موجود"));
@@ -628,6 +626,7 @@ public class StoreService {
         CardProduct card = cardProductRepo.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("السلعة غير موجودة"));
         card.setApprovalStatus(CardProduct.ApprovalStatus.APPROVED);
+        card.setAvailable(true);
         card.setRejectionReason(null);
         return cardProductRepo.save(card);
     }
@@ -764,13 +763,42 @@ public class StoreService {
     // Admin: Get Reports
     @Transactional(readOnly = true)
     public List<OrderReport> getReports(String status) {
+        List<OrderReport> reports;
         if (status != null && !status.isEmpty() && !"ALL".equalsIgnoreCase(status)) {
             try {
-                return reportRepo.findByStatus(OrderReport.ReportStatus.valueOf(status.toUpperCase()));
+                reports = reportRepo.findByStatus(OrderReport.ReportStatus.valueOf(status.toUpperCase()));
             } catch (IllegalArgumentException e) {
-                return List.of();
+                reports = List.of();
             }
+        } else {
+            reports = reportRepo.findAll();
         }
-        return reportRepo.findAll();
+
+        // Populate transient fields
+        reports.forEach(report -> {
+            try {
+                // Buyer Details
+                if (report.getOrder() != null && report.getOrder().getUser() != null) {
+                    report.setBuyerName(report.getOrder().getUser().getUsername());
+                    report.setBuyerEmail(report.getOrder().getUser().getEmail());
+                }
+
+                // Seller Details
+                if (report.getOrder() != null && report.getOrder().getCardProduct() != null) {
+                    Long sellerId = report.getOrder().getCardProduct().getSellerId();
+                    if (sellerId != null) {
+                        userRepo.findById(sellerId).ifPresent(seller -> {
+                            report.setSellerName(seller.getUsername());
+                            report.setSellerEmail(seller.getEmail());
+                        });
+                    }
+                }
+            } catch (Exception e) {
+                // Log error but don't fail, just leave details null
+                e.printStackTrace();
+            }
+        });
+
+        return reports;
     }
 }
