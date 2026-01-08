@@ -33,7 +33,7 @@ public interface WithdrawRepo extends JpaRepository<Withdraw, Long> {
 
     Optional<Withdraw> findByUser(String name);
 
-    @Query("SELECT  COALESCE(SUM(r.amount), 0) FROM Withdraw r where r.userId = :userId")
+    @Query("SELECT  COALESCE(SUM(r.amount), 0) FROM Withdraw r where r.userId = :userId AND r.status <> com.earn.earnmoney.model.WithdrawStatus.REJECTED")
     Double sumAmountByUser(@Param("userId") Long userId);
 
     long countByUserIdAndStatus(Long userId, com.earn.earnmoney.model.WithdrawStatus status);
