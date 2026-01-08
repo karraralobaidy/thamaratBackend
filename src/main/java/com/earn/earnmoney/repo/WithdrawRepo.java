@@ -26,7 +26,7 @@ public interface WithdrawRepo extends JpaRepository<Withdraw, Long> {
 
     List<Withdraw> findAll();
 
-    @Query("SELECT r FROM Withdraw r where  r.user = :user")
+    @Query("SELECT r FROM Withdraw r WHERE r.user = :user AND r.status <> com.earn.earnmoney.model.WithdrawStatus.REJECTED")
     Page<Withdraw> findWithdrawPageByUser(@Param("user") String user, Pageable pageable);
 
     List<Withdraw> findAllByUser(String name);
