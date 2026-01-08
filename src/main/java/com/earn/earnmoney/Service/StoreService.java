@@ -255,6 +255,24 @@ public class StoreService {
         if (cardId == null) {
             throw new IllegalArgumentException("cardId cannot be null");
         }
+
+        // Validate all required fields
+        if (name == null || name.trim().isEmpty()) {
+            throw new RuntimeException("اسم المنتج مطلوب");
+        }
+        if (price == null || price < 0) {
+            throw new RuntimeException("سعر المنتج مطلوب ويجب أن يكون موجباً");
+        }
+        if (category == null || category.trim().isEmpty()) {
+            throw new RuntimeException("فئة المنتج مطلوبة");
+        }
+        if (quantity == null || quantity <= 0) {
+            throw new RuntimeException("الكمية مطلوبة ويجب أن تكون أكبر من صفر");
+        }
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("صورة المنتج مطلوبة");
+        }
+
         CardProduct card = cardProductRepo.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("المنتج غير موجود"));
 
@@ -265,36 +283,26 @@ public class StoreService {
         // Cannot edit approved products that have been sold
         if (card.getSoldQuantity() > 0) {
             // Only allow quantity increase
-            if (quantity != null && quantity < card.getTotalQuantity()) {
+            if (quantity < card.getTotalQuantity()) {
                 throw new RuntimeException("لا يمكن تقليل الكمية لمنتج تم بيع جزء منه");
             }
         }
 
-        // Update fields
-        if (name != null && !name.trim().isEmpty()) {
-            card.setName(name);
-        }
-        if (price != null && price >= 0) {
-            card.setPrice(price);
-        }
-        if (category != null && !category.trim().isEmpty()) {
-            card.setCategory(category);
-        }
-        if (quantity != null && quantity >= card.getSoldQuantity()) {
-            card.setTotalQuantity(quantity);
-        }
+        // Update all fields (all are required now)
+        card.setName(name.trim());
+        card.setPrice(price);
+        card.setCategory(category.trim());
+        card.setTotalQuantity(quantity);
 
-        // Update image if provided
-        if (file != null && !file.isEmpty()) {
-            Image image = card.getImage();
-            if (image == null) {
-                image = new Image();
-            }
-            image.setName(file.getOriginalFilename());
-            image.setType(file.getContentType());
-            image.setImage(ImageUtilities.compressImage(file.getBytes()));
-            card.setImage(image);
+        // Update image (required)
+        Image image = card.getImage();
+        if (image == null) {
+            image = new Image();
         }
+        image.setName(file.getOriginalFilename());
+        image.setType(file.getContentType());
+        image.setImage(ImageUtilities.compressImage(file.getBytes()));
+        card.setImage(image);
 
         // Reset approval status to PENDING for any edit to require admin re-approval
         card.setApprovalStatus(CardProduct.ApprovalStatus.PENDING);
@@ -410,6 +418,8 @@ public class StoreService {
         CardProduct product = cardProductRepo.findById(productId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found"));
         product.setApprovalStatus(CardProduct.ApprovalStatus.APPROVED);
+        product.setAvailable(true); // Make sure it's available when approved
+        product.setRejectionReason(null); // Clear any previous rejection reason
         cardProductRepo.save(product);
     }
 

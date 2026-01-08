@@ -40,10 +40,10 @@ public class GameService {
         List<WheelPrize> prizes = new ArrayList<>();
         // REFERENCE IMAGE STYLE - Purple/Orange alternating
 
-        // 0 Points: 30% - Purple segment
-        prizes.add(new WheelPrize(null, "حظ أوفر", 0, 30.0, "#7B2D8E", "sad-outline"));
-        // 25 Points: 35% - Orange segment
-        prizes.add(new WheelPrize(null, "25 نقطة", 25, 35.0, "#E8702A", "gift-outline"));
+        // 0 Points: 28.65% - Purple segment
+        prizes.add(new WheelPrize(null, "حظ أوفر", 0, 28.65, "#7B2D8E", "sad-outline"));
+        // 25 Points: 34% - Orange segment
+        prizes.add(new WheelPrize(null, "25 نقطة", 25, 34.0, "#E8702A", "gift-outline"));
         // 50 Points: 20% - Purple segment
         prizes.add(new WheelPrize(null, "50 نقطة", 50, 20.0, "#7B2D8E", "star-outline"));
         // 75 Points: 10% - Orange segment
@@ -52,6 +52,10 @@ public class GameService {
         prizes.add(new WheelPrize(null, "100 نقطة", 100, 4.0, "#7B2D8E", "diamond-outline"));
         // 200 Points: 1% - Orange segment
         prizes.add(new WheelPrize(null, "200 نقطة!", 200, 1.0, "#E8702A", "trophy-outline"));
+        // 1000 Points: 0.3% - Gold segment (legendary)
+        prizes.add(new WheelPrize(null, "1000 نقطة!!", 1000, 0.3, "#FFD700", "medal-outline"));
+        // 5000 Points: 0.05% - Pink segment (mythical)
+        prizes.add(new WheelPrize(null, "5000 نقطة!!!", 5000, 0.05, "#FF1493", "ribbon-outline"));
 
         wheelPrizeRepo.saveAll(prizes);
     }
