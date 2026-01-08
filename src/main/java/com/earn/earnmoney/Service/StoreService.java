@@ -294,15 +294,17 @@ public class StoreService {
         card.setCategory(category.trim());
         card.setTotalQuantity(quantity);
 
-        // Update image (required)
-        Image image = card.getImage();
-        if (image == null) {
-            image = new Image();
+        // Update image only if provided
+        if (file != null && !file.isEmpty()) {
+            Image image = card.getImage();
+            if (image == null) {
+                image = new Image();
+            }
+            image.setName(file.getOriginalFilename());
+            image.setType(file.getContentType());
+            image.setImage(ImageUtilities.compressImage(file.getBytes()));
+            card.setImage(image);
         }
-        image.setName(file.getOriginalFilename());
-        image.setType(file.getContentType());
-        image.setImage(ImageUtilities.compressImage(file.getBytes()));
-        card.setImage(image);
 
         // Reset approval status to PENDING for any edit to require admin re-approval
         card.setApprovalStatus(CardProduct.ApprovalStatus.PENDING);
