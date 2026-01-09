@@ -20,6 +20,9 @@ public class CardProduct {
     // New: URL for external images (fallback if Image entity is missing)
     private String imageUrl;
 
+    @Column(name = "contact_phone")
+    private String contactPhone;
+
     private boolean available = true;
 
     // Marketplace fields

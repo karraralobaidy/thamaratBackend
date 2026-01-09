@@ -33,6 +33,10 @@ public class StoreCard {
 
     private String imageUrl;
 
+    @NotBlank(message = "رقم الهاتف للتواصل مطلوب")
+    @Column(name = "contact_phone")
+    private String contactPhone;
+
     @Min(value = 0, message = "المخزون يجب أن يكون أكبر من أو يساوي صفر")
     private Integer stock = 0;
 

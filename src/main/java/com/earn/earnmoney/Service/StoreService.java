@@ -43,6 +43,13 @@ public class StoreService {
         return cardProductRepo.findByApprovalStatusAndAvailableTrue(CardProduct.ApprovalStatus.APPROVED)
                 .stream()
                 .filter(card -> card.getTotalQuantity() > card.getSoldQuantity())
+                .peek(p -> {
+                    if (p.getSellerId() != null) {
+                        userRepo.findById(p.getSellerId()).ifPresent(user -> {
+                            p.setSellerName(user.getFull_name() != null ? user.getFull_name() : user.getUsername());
+                        });
+                    }
+                })
                 .collect(Collectors.toList());
     }
 
@@ -186,8 +193,14 @@ public class StoreService {
     // User adds new listing (marketplace)
     @Transactional
     public CardProduct addUserListing(UserAuth user, String name, Long price, String category, Integer quantity,
-            String typeStr,
+            String contactPhone, String typeStr,
             MultipartFile file) throws IOException {
+
+        // Validate contact phone
+        if (contactPhone == null || contactPhone.trim().isEmpty()) {
+            throw new RuntimeException("رقم الهاتف للتواصل مطلوب");
+        }
+
         CardProduct card = new CardProduct();
         card.setName(name);
         card.setPrice(price);
@@ -196,6 +209,7 @@ public class StoreService {
         card.setSellerId(user.getId());
         card.setTotalQuantity(quantity);
         card.setSoldQuantity(0);
+        card.setContactPhone(contactPhone.trim());
         card.setTaxRate(0.03); // 3% tax
         card.setApprovalStatus(CardProduct.ApprovalStatus.PENDING);
 
@@ -251,7 +265,7 @@ public class StoreService {
     // Seller updates their own listing
     @Transactional
     public CardProduct updateUserListing(UserAuth user, Long cardId, String name, Long price,
-            String category, Integer quantity, MultipartFile file) throws IOException {
+            String category, Integer quantity, String contactPhone, MultipartFile file) throws IOException {
         if (cardId == null) {
             throw new IllegalArgumentException("cardId cannot be null");
         }
@@ -268,6 +282,9 @@ public class StoreService {
         }
         if (quantity == null || quantity <= 0) {
             throw new RuntimeException("الكمية مطلوبة ويجب أن تكون أكبر من صفر");
+        }
+        if (contactPhone == null || contactPhone.trim().isEmpty()) {
+            throw new RuntimeException("رقم الهاتف للتواصل مطلوب");
         }
         // Image is optional for updates - user can keep existing image
 
@@ -291,6 +308,7 @@ public class StoreService {
         card.setPrice(price);
         card.setCategory(category.trim());
         card.setTotalQuantity(quantity);
+        card.setContactPhone(contactPhone.trim());
 
         // Update image only if provided
         if (file != null && !file.isEmpty()) {

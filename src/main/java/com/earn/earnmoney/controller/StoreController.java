@@ -100,11 +100,13 @@ public class StoreController {
             @RequestParam("price") Long price,
             @RequestParam("category") String category,
             @RequestParam("quantity") Integer quantity,
+            @RequestParam("contactPhone") String contactPhone,
             @RequestParam(value = "type", required = false, defaultValue = "DIGITAL") String type, // DIGITAL or
                                                                                                    // PHYSICAL
             @RequestParam(value = "image", required = false) org.springframework.web.multipart.MultipartFile image) {
         try {
-            CardProduct listing = storeService.addUserListing(getCurrentUser(), name, price, category, quantity, type,
+            CardProduct listing = storeService.addUserListing(getCurrentUser(), name, price, category, quantity,
+                    contactPhone, type,
                     image);
             Map<String, Object> response = new HashMap<>();
             response.put("message", "تم إضافة سلعتك بنجاح! في انتظار موافقة الإدارة.");
@@ -292,10 +294,11 @@ public class StoreController {
             @RequestParam(value = "price", required = false) Long price,
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "quantity", required = false) Integer quantity,
+            @RequestParam(value = "contactPhone", required = false) String contactPhone,
             @RequestParam(value = "image", required = false) org.springframework.web.multipart.MultipartFile image) {
         try {
             CardProduct updated = storeService.updateUserListing(getCurrentUser(), id, name, price,
-                    category, quantity, image);
+                    category, quantity, contactPhone, image);
             if (updated.getImage() != null) {
                 updated.getImage().setImage(null); // Clear binary data
             }
