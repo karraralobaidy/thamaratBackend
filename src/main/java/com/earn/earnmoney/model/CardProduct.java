@@ -77,4 +77,7 @@ public class CardProduct {
 
     @Transient
     private String sellerName;
+
+    @Transient
+    private String sellerEmail;
 }

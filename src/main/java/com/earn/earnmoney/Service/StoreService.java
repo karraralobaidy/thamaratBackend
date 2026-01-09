@@ -54,7 +54,17 @@ public class StoreService {
     }
 
     public List<CardProduct> getAllCards() {
-        return cardProductRepo.findAll();
+        return cardProductRepo.findAll().stream()
+                .peek(p -> {
+                    if (p.getSellerId() != null) {
+                        userRepo.findById(p.getSellerId()).ifPresent(user -> {
+                            p.setSellerName(user.getFull_name() != null ? user.getFull_name() : user.getUsername());
+                            p.setSellerEmail(user.getUsername()); // Username acts as email/identifier often
+                            // contactPhone is already on CardProduct if saved
+                        });
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
     public CardProduct findCardById(Long id) {
