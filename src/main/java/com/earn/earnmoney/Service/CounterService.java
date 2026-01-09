@@ -39,6 +39,7 @@ public class CounterService {
                 .stream()
                 .filter(c -> c.getPrice() > 0) // Hide Free Counter from store
                 .map(this::convertToDTO)
+                .sorted((c1, c2) -> Integer.compare(c1.getPointsPerClick(), c2.getPointsPerClick()))
                 .toList();
     }
 
