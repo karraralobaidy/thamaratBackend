@@ -802,9 +802,14 @@ public class StoreService {
                     report.setBuyerEmail(report.getOrder().getUser().getUsername());
                 }
 
-                // Seller Details
+                // Seller & Product Details
                 if (report.getOrder() != null && report.getOrder().getCardProduct() != null) {
-                    Long sellerId = report.getOrder().getCardProduct().getSellerId();
+                    CardProduct card = report.getOrder().getCardProduct();
+                    // Populate transient product details on the order
+                    report.getOrder().setCardName(card.getName());
+                    report.getOrder().setCardPrice(card.getPrice());
+
+                    Long sellerId = card.getSellerId();
                     if (sellerId != null) {
                         userRepo.findById(sellerId).ifPresent(seller -> {
                             report.setSellerName(seller.getFull_name());
