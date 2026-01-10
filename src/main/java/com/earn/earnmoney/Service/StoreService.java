@@ -1049,7 +1049,6 @@ public class StoreService {
                 if (report.getOrder() != null && report.getOrder().getUser() != null) {
                     report.setBuyerName(report.getOrder().getUser().getFull_name());
                     // UserAuth doesn't have email field, using username as fallback
-                    report.setBuyerName(report.getOrder().getUser().getFull_name());
                     // UserAuth doesn't have email field, using username as fallback
                     report.setBuyerEmail(report.getOrder().getUser().getUsername());
                     report.setBuyerReferralCode(report.getOrder().getUser().getReferralCode());
