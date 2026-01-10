@@ -300,6 +300,19 @@ public class StoreController {
         }
     }
 
+    // Admin: Reject Purchase (Delete Order)
+    @PostMapping("/admin/store/purchases/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> rejectPurchaseAdmin(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String reason = body.getOrDefault("reason", "Admin Rejected");
+        try {
+            storeService.rejectPurchase(id, reason);
+            return ResponseEntity.ok(Map.of("message", "Purchase rejected"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // Seller updates their own listing
     @PutMapping(value = "/my-listings/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateMyListing(

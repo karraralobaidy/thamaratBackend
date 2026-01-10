@@ -215,6 +215,21 @@ public class StoreService {
         sellerLog.setNewBalance((double) seller.getPoints());
         sellerLog.setTransactionDate(LocalDateTime.now());
         logRepo.save(sellerLog);
+
+        // Notify Buyer about Release (Order Completion)
+        if (purchase.getUser() != null) {
+            UserAuth buyer = purchase.getUser();
+            LogTransaction buyerLog = new LogTransaction();
+            buyerLog.setUserId(buyer.getId());
+            buyerLog.setUsername(buyer.getUsername());
+            buyerLog.setFullName(buyer.getFull_name());
+            buyerLog.setTransactionDate(LocalDateTime.now());
+            buyerLog.setType("ORDER_COMPLETED");
+            buyerLog.setDescription("تم اكتمال الطلب وصرف المبلغ للبائع: " + card.getName());
+            buyerLog.setPreviousBalance((double) buyer.getPoints());
+            buyerLog.setNewBalance((double) buyer.getPoints());
+            logRepo.save(buyerLog);
+        }
     }
 
     // User adds new listing (marketplace)
