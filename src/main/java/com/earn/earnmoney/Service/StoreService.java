@@ -466,6 +466,22 @@ public class StoreService {
         product.setAvailable(true); // Make sure it's available when approved
         product.setRejectionReason(null); // Clear any previous rejection reason
         cardProductRepo.save(product);
+
+        // Notify seller about approval
+        if (product.getSellerId() != null) {
+            userRepo.findById(product.getSellerId()).ifPresent(seller -> {
+                LogTransaction log = new LogTransaction();
+                log.setUserId(seller.getId());
+                log.setUsername(seller.getUsername());
+                log.setFullName(seller.getFull_name());
+                log.setTransactionDate(LocalDateTime.now());
+                log.setType("PRODUCT_APPROVED");
+                log.setDescription("تمت الموافقة على منتجك: " + product.getName());
+                log.setPreviousBalance((double) seller.getPoints());
+                log.setNewBalance((double) seller.getPoints());
+                logRepo.save(log);
+            });
+        }
     }
 
     // Admin: Reject Product
@@ -475,6 +491,22 @@ public class StoreService {
         product.setApprovalStatus(CardProduct.ApprovalStatus.REJECTED);
         product.setRejectionReason(reason);
         cardProductRepo.save(product);
+
+        // Notify seller about rejection
+        if (product.getSellerId() != null) {
+            userRepo.findById(product.getSellerId()).ifPresent(seller -> {
+                LogTransaction log = new LogTransaction();
+                log.setUserId(seller.getId());
+                log.setUsername(seller.getUsername());
+                log.setFullName(seller.getFull_name());
+                log.setTransactionDate(LocalDateTime.now());
+                log.setType("PRODUCT_REJECTED");
+                log.setDescription("تم رفض منتجك: " + product.getName() + " - السبب: " + reason);
+                log.setPreviousBalance((double) seller.getPoints());
+                log.setNewBalance((double) seller.getPoints());
+                logRepo.save(log);
+            });
+        }
     }
 
     // Admin: Get Orders Waiting for Delivery Confirmation (to release points)
