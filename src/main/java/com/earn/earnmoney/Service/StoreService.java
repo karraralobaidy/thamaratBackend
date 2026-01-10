@@ -847,6 +847,21 @@ public class StoreService {
         else if (current == CardPurchase.PurchaseStatus.PROCESSING
                 && newStatus == CardPurchase.PurchaseStatus.ON_DELIVERY) {
             purchase.setStatus(newStatus);
+
+            // Notify Buyer about ON_DELIVERY
+            if (purchase.getUser() != null) {
+                UserAuth buyer = purchase.getUser();
+                LogTransaction log = new LogTransaction();
+                log.setUserId(buyer.getId());
+                log.setUsername(buyer.getUsername());
+                log.setFullName(buyer.getFull_name());
+                log.setTransactionDate(LocalDateTime.now());
+                log.setType("ORDER_ON_DELIVERY");
+                log.setDescription("طلبك قيد التوصيل: " + purchase.getCardProduct().getName());
+                log.setPreviousBalance((double) buyer.getPoints());
+                log.setNewBalance((double) buyer.getPoints());
+                logRepo.save(log);
+            }
         }
         // 3. On Delivery -> Delivered
         else if (current == CardPurchase.PurchaseStatus.ON_DELIVERY
