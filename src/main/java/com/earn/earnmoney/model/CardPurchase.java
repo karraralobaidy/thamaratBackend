@@ -34,7 +34,7 @@ public class CardPurchase {
     @Column(name = "purchase_status")
     private PurchaseStatus status = PurchaseStatus.PENDING;
 
-    @Column(name = "card_code")
+    @Column(name = "card_code", columnDefinition = "TEXT")
     private String cardCode;
 
     // Delivery Details (for Physical Products)

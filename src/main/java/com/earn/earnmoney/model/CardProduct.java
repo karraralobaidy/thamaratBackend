@@ -15,6 +15,7 @@ public class CardProduct {
 
     private Long price; // سعر الشراء بالنقاط
 
+    @Column(columnDefinition = "TEXT")
     private String category; // فئة الرصيد (آسيا، زين...)
 
     // New: URL for external images (fallback if Image entity is missing)
