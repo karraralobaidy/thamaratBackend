@@ -90,6 +90,7 @@ public class CounterService {
         uc.setCurrentPackage(basePackage);
         long duration = counter.getDurationDays() != null ? counter.getDurationDays() : 730;
         uc.setExpireAt(LocalDateTime.now().plusDays(duration));
+        uc.setSubscribedAt(LocalDateTime.now());
 
         userRepo.save(user);
         userCounterRepo.save(uc);
@@ -139,7 +140,8 @@ public class CounterService {
         uc.setCounter(freeCounter);
         uc.setCurrentPackage(basePackage);
         uc.setExpireAt(LocalDateTime.now().plusYears(100)); // العداد المجاني طويل الأمد (أو سنة حسب
-                                                            // الرغبة)
+        uc.setSubscribedAt(LocalDateTime.now());
+        // الرغبة)
 
         userCounterRepo.save(uc);
 

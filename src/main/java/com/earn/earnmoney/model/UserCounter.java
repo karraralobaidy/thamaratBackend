@@ -32,4 +32,6 @@ public class UserCounter {
     private LocalDateTime lastClickedAt;
 
     private LocalDateTime expireAt; // تاريخ انتهاء الاشتراك (سنة واحدة)
+
+    private LocalDateTime subscribedAt; // تاريخ الاشتراك
 }

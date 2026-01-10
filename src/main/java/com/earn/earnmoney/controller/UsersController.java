@@ -229,7 +229,8 @@ public class UsersController {
                         uc.getCounter().getName(),
                         uc.getExpireAt(),
                         uc.getCounter().getDailyPoints(),
-                        uc.getCounter().getPrice()))
+                        uc.getCounter().getPrice(),
+                        uc.getSubscribedAt()))
                 .collect(java.util.stream.Collectors.toList());
 
         return new ResponseEntity<>(counters, HttpStatus.OK);
@@ -244,6 +245,10 @@ public class UsersController {
 
         org.springframework.data.domain.Page<UserAuth> referrals = userService
                 .findByReferralCodeFriend(user.getReferralCode(), pageable);
+
+        System.out.println(
+                "DEBUG: getUserReferrals for user " + user.getUsername() + ", code: " + user.getReferralCode());
+        System.out.println("DEBUG: Found " + referrals.getTotalElements() + " referrals");
 
         Page<com.earn.earnmoney.dto.ReferralDetailDTO> referralDTOs = referrals.map(ref -> {
             // Find active counter for referral

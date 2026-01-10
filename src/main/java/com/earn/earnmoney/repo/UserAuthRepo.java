@@ -46,6 +46,7 @@ public interface UserAuthRepo extends JpaRepository<UserAuth, Long> {
 
     Boolean existsByUsernameAndPassword(String username, String password);
 
-    Page<UserAuth> findByReferralCodeFriend(String referralCodeFriend, Pageable pageable);
+    @Query("SELECT u FROM UserAuth u WHERE u.referralCodeFriend = :referralCodeFriend")
+    Page<UserAuth> findByReferralCodeFriend(@Param("referralCodeFriend") String referralCodeFriend, Pageable pageable);
 
 }

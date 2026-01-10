@@ -14,4 +14,5 @@ public class UserCounterDetailDTO {
     private LocalDateTime expireAt;
     private Long pointsPerClick;
     private double price;
+    private LocalDateTime subscribedAt;
 }

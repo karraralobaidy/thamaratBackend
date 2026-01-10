@@ -233,13 +233,28 @@ public class StoreService {
         }
     }
 
-    // User adds new listing (marketplace)
+    // Seller adds a new card to marketplace
     @Transactional
-    public CardProduct addUserListing(UserAuth user, String name, Long price, String category, Integer quantity,
-            String contactPhone, String typeStr,
-            MultipartFile file) throws IOException {
-
-        // Validate contact phone
+    public CardProduct addCard(UserAuth user, String name, Long price, String category,
+            String sectionName, // New Field
+            Integer quantity, String contactPhone, String productType, MultipartFile file)
+            throws IOException {
+        // Validate inputs
+        if (name == null || name.trim().isEmpty()) {
+            throw new RuntimeException("اسم المنتج مطلوب");
+        }
+        if (price == null || price < 0) {
+            throw new RuntimeException("سعر المنتج مطلوب ويجب أن يكون موجباً");
+        }
+        if (category == null || category.trim().isEmpty()) {
+            throw new RuntimeException("وصف المنتج مطلوب");
+        }
+        if (sectionName == null || sectionName.trim().isEmpty()) {
+            throw new RuntimeException("فئة المنتج (القسم) مطلوبة");
+        }
+        if (quantity == null || quantity <= 0) {
+            throw new RuntimeException("الكمية مطلوبة ويجب أن تكون أكبر من صفر");
+        }
         if (contactPhone == null || contactPhone.trim().isEmpty()) {
             throw new RuntimeException("رقم الهاتف للتواصل مطلوب");
         }
@@ -247,33 +262,35 @@ public class StoreService {
         CardProduct card = new CardProduct();
         card.setName(name);
         card.setPrice(price);
-        card.setCategory(category);
-        card.setAvailable(true);
-        card.setSellerId(user.getId());
+        card.setCategory(category); // Now acts as Description
+        card.setSectionName(sectionName); // New Section Field
         card.setTotalQuantity(quantity);
-        card.setSoldQuantity(0);
-        card.setContactPhone(contactPhone.trim());
-        card.setTaxRate(0.03); // 3% tax
+        card.setSoldQuantity(0); // Initialize sold quantity
+        card.setContactPhone(contactPhone);
+
+        // Set approval status to PENDING
         card.setApprovalStatus(CardProduct.ApprovalStatus.PENDING);
 
-        // Parse Type
-        try {
-            if (typeStr != null) {
-                card.setProductType(CardProduct.ProductType.valueOf(typeStr.toUpperCase()));
-            } else {
-                card.setProductType(CardProduct.ProductType.DIGITAL);
-            }
-        } catch (Exception e) {
-            card.setProductType(CardProduct.ProductType.DIGITAL);
+        // ... rest of the method logic (Product Type, Image) ...
+        if (productType != null
+                && (productType.equalsIgnoreCase("PHYSICAL") || productType.equalsIgnoreCase("DIGITAL"))) {
+            card.setProductType(CardProduct.ProductType.valueOf(productType.toUpperCase()));
+        } else {
+            card.setProductType(CardProduct.ProductType.DIGITAL); // Default
         }
 
+        // Handle Image Upload
         if (file != null && !file.isEmpty()) {
             Image image = new Image();
             image.setName(file.getOriginalFilename());
             image.setType(file.getContentType());
-            image.setImage(ImageUtilities.compressImage(file.getBytes()));
+            image.setData(file.getBytes());
+            image = imageRepo.save(image);
             card.setImage(image);
         }
+
+        // Set Seller
+        card.setSellerId(user.getId());
 
         return cardProductRepo.save(card);
     }
@@ -308,7 +325,8 @@ public class StoreService {
     // Seller updates their own listing
     @Transactional
     public CardProduct updateUserListing(UserAuth user, Long cardId, String name, Long price,
-            String category, Integer quantity, String contactPhone, MultipartFile file) throws IOException {
+            String category, String sectionName, // New Field
+            Integer quantity, String contactPhone, MultipartFile file) throws IOException {
         if (cardId == null) {
             throw new IllegalArgumentException("cardId cannot be null");
         }
@@ -321,7 +339,10 @@ public class StoreService {
             throw new RuntimeException("سعر المنتج مطلوب ويجب أن يكون موجباً");
         }
         if (category == null || category.trim().isEmpty()) {
-            throw new RuntimeException("فئة المنتج مطلوبة");
+            throw new RuntimeException("وصف المنتج مطلوب");
+        }
+        if (sectionName == null || sectionName.trim().isEmpty()) {
+            throw new RuntimeException("فئة المنتج (القسم) مطلوبة");
         }
         if (quantity == null || quantity <= 0) {
             throw new RuntimeException("الكمية مطلوبة ويجب أن تكون أكبر من صفر");
@@ -349,7 +370,8 @@ public class StoreService {
         // Update all fields (all are required now)
         card.setName(name.trim());
         card.setPrice(price);
-        card.setCategory(category.trim());
+        card.setCategory(category.trim()); // Description
+        card.setSectionName(sectionName.trim()); // Section
         card.setTotalQuantity(quantity);
         card.setContactPhone(contactPhone.trim());
 

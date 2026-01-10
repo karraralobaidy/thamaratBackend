@@ -98,14 +98,15 @@ public class StoreController {
     public ResponseEntity<?> addListing(
             @RequestParam("name") String name,
             @RequestParam("price") Long price,
-            @RequestParam("category") String category,
+            @RequestParam("category") String category, // Description
+            @RequestParam("sectionName") String sectionName, // Section
             @RequestParam("quantity") Integer quantity,
             @RequestParam("contactPhone") String contactPhone,
             @RequestParam(value = "type", required = false, defaultValue = "DIGITAL") String type, // DIGITAL or
                                                                                                    // PHYSICAL
             @RequestParam(value = "image", required = false) org.springframework.web.multipart.MultipartFile image) {
         try {
-            CardProduct listing = storeService.addUserListing(getCurrentUser(), name, price, category, quantity,
+            CardProduct listing = storeService.addCard(getCurrentUser(), name, price, category, sectionName, quantity,
                     contactPhone, type,
                     image);
             Map<String, Object> response = new HashMap<>();
@@ -319,13 +320,14 @@ public class StoreController {
             @PathVariable Long id,
             @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "price", required = false) Long price,
-            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "category", required = false) String category, // Description
+            @RequestParam(value = "sectionName", required = false) String sectionName, // Section
             @RequestParam(value = "quantity", required = false) Integer quantity,
             @RequestParam(value = "contactPhone", required = false) String contactPhone,
             @RequestParam(value = "image", required = false) org.springframework.web.multipart.MultipartFile image) {
         try {
             CardProduct updated = storeService.updateUserListing(getCurrentUser(), id, name, price,
-                    category, quantity, contactPhone, image);
+                    category, sectionName, quantity, contactPhone, image);
             if (updated.getImage() != null) {
                 updated.getImage().setImage(null); // Clear binary data
             }
