@@ -148,6 +148,23 @@ public class StoreService {
         log.setNewBalance((double) user.getPoints());
         log.setTransactionDate(LocalDateTime.now());
         logRepo.save(log);
+
+        // 5. Notify Seller about new order
+        if (card.getSellerId() != null) {
+            userRepo.findById(card.getSellerId()).ifPresent(seller -> {
+                LogTransaction sellerLog = new LogTransaction();
+                sellerLog.setUserId(seller.getId());
+                sellerLog.setUsername(seller.getUsername());
+                sellerLog.setFullName(seller.getFull_name());
+                sellerLog.setTransactionDate(LocalDateTime.now());
+                sellerLog.setType("NEW_ORDER");
+                sellerLog.setDescription(
+                        "طلب جديد على منتجك: " + card.getName() + " من المشتري: " + user.getFull_name());
+                sellerLog.setPreviousBalance((double) seller.getPoints());
+                sellerLog.setNewBalance((double) seller.getPoints());
+                logRepo.save(sellerLog);
+            });
+        }
     }
 
     // Admin releases points for Physical products AFTER delivery confirmation
@@ -523,6 +540,21 @@ public class StoreService {
         purchase.setStatus(CardPurchase.PurchaseStatus.DELIVERED);
         purchase.setCardCode(code);
         cardPurchaseRepo.save(purchase);
+
+        // إشعار المشتري بأن الطلب تم شحنه
+        UserAuth buyer = purchase.getUser();
+        if (buyer != null) {
+            LogTransaction log = new LogTransaction();
+            log.setUserId(buyer.getId());
+            log.setUsername(buyer.getUsername());
+            log.setFullName(buyer.getFull_name());
+            log.setTransactionDate(LocalDateTime.now());
+            log.setType("ORDER_SHIPPED");
+            log.setDescription("تم شحن طلبك: " + purchase.getCardProduct().getName());
+            log.setPreviousBalance((double) buyer.getPoints());
+            log.setNewBalance((double) buyer.getPoints());
+            logRepo.save(log);
+        }
     }
 
     // Admin: Complete Purchase (Send Code)
@@ -771,6 +803,38 @@ public class StoreService {
             report.setAdminComment(adminComment);
             reportRepo.save(report);
 
+            // إشعار البائع والمشتري بقرار الإدارة
+            UserAuth buyer = purchase.getUser();
+            UserAuth seller = purchase.getCardProduct().getSellerId() != null
+                    ? userRepo.findById(purchase.getCardProduct().getSellerId()).orElse(null)
+                    : null;
+
+            if (buyer != null) {
+                LogTransaction buyerLog = new LogTransaction();
+                buyerLog.setUserId(buyer.getId());
+                buyerLog.setUsername(buyer.getUsername());
+                buyerLog.setFullName(buyer.getFull_name());
+                buyerLog.setTransactionDate(LocalDateTime.now());
+                buyerLog.setType("DISPUTE_RESOLVED");
+                buyerLog.setDescription("تم حل البلاغ - تحرير الأموال للبائع. ملاحظة الإدارة: " + adminComment);
+                buyerLog.setPreviousBalance((double) buyer.getPoints());
+                buyerLog.setNewBalance((double) buyer.getPoints());
+                logRepo.save(buyerLog);
+            }
+
+            if (seller != null) {
+                LogTransaction sellerLog = new LogTransaction();
+                sellerLog.setUserId(seller.getId());
+                sellerLog.setUsername(seller.getUsername());
+                sellerLog.setFullName(seller.getFull_name());
+                sellerLog.setTransactionDate(LocalDateTime.now());
+                sellerLog.setType("DISPUTE_RESOLVED");
+                sellerLog.setDescription("تم حل البلاغ - تحرير الأموال لك. ملاحظة الإدارة: " + adminComment);
+                sellerLog.setPreviousBalance((double) seller.getPoints());
+                sellerLog.setNewBalance((double) seller.getPoints());
+                logRepo.save(sellerLog);
+            }
+
         } else if ("REFUND_BUYER".equalsIgnoreCase(decision)) {
             // Admin sides with Buyer -> Refund
             rejectPurchase(purchase.getId(), "Report Resolved: " + adminComment); // Re-use logic
@@ -782,6 +846,38 @@ public class StoreService {
             report.setStatus(OrderReport.ReportStatus.RESOLVED_REFUND);
             report.setAdminComment(adminComment);
             reportRepo.save(report);
+
+            // إشعار البائع والمشتري بقرار الإدارة
+            UserAuth buyer = purchase.getUser();
+            UserAuth seller = purchase.getCardProduct().getSellerId() != null
+                    ? userRepo.findById(purchase.getCardProduct().getSellerId()).orElse(null)
+                    : null;
+
+            if (buyer != null) {
+                LogTransaction buyerLog = new LogTransaction();
+                buyerLog.setUserId(buyer.getId());
+                buyerLog.setUsername(buyer.getUsername());
+                buyerLog.setFullName(buyer.getFull_name());
+                buyerLog.setTransactionDate(LocalDateTime.now());
+                buyerLog.setType("DISPUTE_RESOLVED");
+                buyerLog.setDescription("تم حل البلاغ - إعادة النقاط لك. ملاحظة الإدارة: " + adminComment);
+                buyerLog.setPreviousBalance((double) buyer.getPoints());
+                buyerLog.setNewBalance((double) buyer.getPoints());
+                logRepo.save(buyerLog);
+            }
+
+            if (seller != null) {
+                LogTransaction sellerLog = new LogTransaction();
+                sellerLog.setUserId(seller.getId());
+                sellerLog.setUsername(seller.getUsername());
+                sellerLog.setFullName(seller.getFull_name());
+                sellerLog.setTransactionDate(LocalDateTime.now());
+                sellerLog.setType("DISPUTE_RESOLVED");
+                sellerLog.setDescription("تم حل البلاغ - إعادة النقاط للمشتري. ملاحظة الإدارة: " + adminComment);
+                sellerLog.setPreviousBalance((double) seller.getPoints());
+                sellerLog.setNewBalance((double) seller.getPoints());
+                logRepo.save(sellerLog);
+            }
 
         } else {
             throw new IllegalArgumentException("قرار غير معروف: " + decision);
