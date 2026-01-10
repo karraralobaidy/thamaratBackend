@@ -581,8 +581,8 @@ public class StoreService {
             log.setUsername(buyer.getUsername());
             log.setFullName(buyer.getFull_name());
             log.setTransactionDate(LocalDateTime.now());
-            log.setType("ORDER_SHIPPED");
-            log.setDescription("تم شحن طلبك: " + purchase.getCardProduct().getName());
+            log.setType("ORDER_DELIVERED");
+            log.setDescription("تم تسليم طلبك: " + purchase.getCardProduct().getName());
             log.setPreviousBalance((double) buyer.getPoints());
             log.setNewBalance((double) buyer.getPoints());
             logRepo.save(log);
@@ -648,8 +648,8 @@ public class StoreService {
             log.setUsername(user.getUsername());
             log.setFullName(user.getFull_name());
             log.setTransactionDate(LocalDateTime.now());
-            log.setType("REFUND"); // نوع العملية استرجاع
-            log.setDescription("استرجاع نقاط: " + purchase.getCardProduct().getName() + " - سبب: " + reason);
+            log.setType("ORDER_REJECTED"); // Changed from REFUND to be more specific
+            log.setDescription("تم رفض طلبك: " + purchase.getCardProduct().getName() + " - السبب: " + reason);
             log.setPreviousBalance((double) oldPoints);
             log.setNewBalance((double) newPoints);
             logRepo.save(log);
@@ -867,6 +867,21 @@ public class StoreService {
         else if (current == CardPurchase.PurchaseStatus.ON_DELIVERY
                 && newStatus == CardPurchase.PurchaseStatus.DELIVERED) {
             purchase.setStatus(newStatus);
+
+            // Notify Buyer about DELIVERED
+            if (purchase.getUser() != null) {
+                UserAuth buyer = purchase.getUser();
+                LogTransaction log = new LogTransaction();
+                log.setUserId(buyer.getId());
+                log.setUsername(buyer.getUsername());
+                log.setFullName(buyer.getFull_name());
+                log.setTransactionDate(LocalDateTime.now());
+                log.setType("ORDER_DELIVERED");
+                log.setDescription("تم تسليم طلبك بنجاح: " + purchase.getCardProduct().getName());
+                log.setPreviousBalance((double) buyer.getPoints());
+                log.setNewBalance((double) buyer.getPoints());
+                logRepo.save(log);
+            }
         } else {
             throw new RuntimeException("تغيير الحالة غير مسموح به من " + current + " إلى " + newStatus);
         }
