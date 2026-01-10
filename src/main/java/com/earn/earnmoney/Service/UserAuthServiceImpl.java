@@ -180,4 +180,10 @@ public class UserAuthServiceImpl implements UserAuthService {
         return userRepo.findByReferralCodeFriend(referralCodeFriend, pageable);
     }
 
+    @Override
+    public List<UserAuth> findAllByReferralCodeFriend(String referralCodeFriend) {
+        // Get all users with this referralCodeFriend without pagination
+        return userRepo.findByReferralCodeFriend(referralCodeFriend, Pageable.unpaged()).getContent();
+    }
+
 }

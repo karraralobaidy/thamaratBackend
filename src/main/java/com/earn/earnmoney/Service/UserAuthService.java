@@ -52,4 +52,6 @@ public interface UserAuthService {
     Page<UserAuth> findByReferralCodeFriend(String referralCodeFriend,
             org.springframework.data.domain.Pageable pageable);
 
+    List<UserAuth> findAllByReferralCodeFriend(String referralCodeFriend);
+
 }

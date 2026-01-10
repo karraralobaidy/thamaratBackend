@@ -511,9 +511,27 @@ public class UsersController {
             }
         }
 
+        // Get old referral code before updating
+        String oldReferralCode = user.getReferralCode();
+
         // Update referral code
         user.setReferralCode(newReferralCode);
         userService.saveUser(user);
+
+        // CASCADE UPDATE: Update all users who used the old referral code
+        if (oldReferralCode != null && !oldReferralCode.equals(newReferralCode)) {
+            List<UserAuth> referredUsers = userService.findAllByReferralCodeFriend(oldReferralCode);
+            int updatedCount = 0;
+            for (UserAuth referredUser : referredUsers) {
+                referredUser.setReferralCodeFriend(newReferralCode);
+                userService.saveUser(referredUser);
+                updatedCount++;
+            }
+
+            System.out
+                    .println("DEBUG: Updated referralCode from '" + oldReferralCode + "' to '" + newReferralCode + "'");
+            System.out.println("DEBUG: Cascade updated " + updatedCount + " referred users");
+        }
 
         return ResponseEntity.ok(new MessageResponse("تم تحديث رمز الإحالة بنجاح إلى: " + newReferralCode));
     }
