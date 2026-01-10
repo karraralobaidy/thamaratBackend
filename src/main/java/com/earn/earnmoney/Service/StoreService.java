@@ -751,6 +751,14 @@ public class StoreService {
                 if (p.getCardProduct() != null) {
                     p.setCardName(p.getCardProduct().getName());
                     p.setCardPrice(p.getCardProduct().getPrice());
+
+                    // Add seller info
+                    if (p.getCardProduct().getSellerId() != null) {
+                        userRepo.findById(p.getCardProduct().getSellerId()).ifPresent(seller -> {
+                            p.setSellerName(seller.getFull_name());
+                            p.setSellerContactPhone(p.getCardProduct().getContactPhone());
+                        });
+                    }
                 }
             } catch (Exception e) {
                 // Ignore transient errors

@@ -69,6 +69,9 @@ public class CardPurchase {
     @Transient
     private String sellerName;
 
+    @Transient
+    private String sellerContactPhone;
+
     @PrePersist
     protected void onCreate() {
         purchaseDate = LocalDateTime.now();
