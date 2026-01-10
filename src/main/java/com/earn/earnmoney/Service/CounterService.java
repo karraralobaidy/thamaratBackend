@@ -15,6 +15,7 @@ import com.earn.earnmoney.model.LogTransaction;
 import com.earn.earnmoney.repo.LogTransactionRepo;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import com.earn.earnmoney.dto.CounterDTO;
@@ -474,7 +475,7 @@ public class CounterService {
         log.setDescription(desc);
         log.setPreviousBalance(prevBalance);
         log.setNewBalance(newBalance);
-        log.setTransactionDate(LocalDateTime.now());
+        log.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
         logRepo.save(log);
     }
 

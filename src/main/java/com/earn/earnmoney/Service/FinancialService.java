@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 @Service
@@ -259,7 +260,7 @@ public class FinancialService {
         log.setDescription(desc);
         log.setPreviousBalance(prevBalance);
         log.setNewBalance(newBalance);
-        log.setTransactionDate(LocalDateTime.now());
+        log.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
         logRepo.save(log);
     }
 

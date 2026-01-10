@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -106,7 +107,7 @@ public class GameService {
             log.setDescription("عجلة الحظ: حظ أوفر المرة القادمة");
         }
 
-        log.setTransactionDate(LocalDateTime.now());
+        log.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
         log.setPreviousBalance((double) previousBalance);
         log.setNewBalance((double) user.getPoints());
         logRepo.save(log);

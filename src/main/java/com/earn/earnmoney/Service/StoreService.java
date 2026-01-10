@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.persistence.EntityNotFoundException;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -146,7 +147,7 @@ public class StoreService {
         log.setDescription("شراء: " + card.getName());
         log.setPreviousBalance((double) (user.getPoints() + totalPrice));
         log.setNewBalance((double) user.getPoints());
-        log.setTransactionDate(LocalDateTime.now());
+        log.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
         logRepo.save(log);
 
         // 5. Notify Seller about new order
@@ -156,7 +157,7 @@ public class StoreService {
                 sellerLog.setUserId(seller.getId());
                 sellerLog.setUsername(seller.getUsername());
                 sellerLog.setFullName(seller.getFull_name());
-                sellerLog.setTransactionDate(LocalDateTime.now());
+                sellerLog.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
                 sellerLog.setType("NEW_ORDER");
                 sellerLog.setDescription(
                         "طلب جديد على منتجك: " + card.getName() + " من المشتري: " + user.getFull_name());
@@ -213,7 +214,7 @@ public class StoreService {
         sellerLog.setDescription("إيداع أرباح بيع (ملموس): " + card.getName());
         sellerLog.setPreviousBalance((double) (seller.getPoints() - sellerAmount));
         sellerLog.setNewBalance((double) seller.getPoints());
-        sellerLog.setTransactionDate(LocalDateTime.now());
+        sellerLog.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
         logRepo.save(sellerLog);
 
         // Notify Buyer about Release (Order Completion)
@@ -223,7 +224,7 @@ public class StoreService {
             buyerLog.setUserId(buyer.getId());
             buyerLog.setUsername(buyer.getUsername());
             buyerLog.setFullName(buyer.getFull_name());
-            buyerLog.setTransactionDate(LocalDateTime.now());
+            buyerLog.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
             buyerLog.setType("ORDER_COMPLETED");
             buyerLog.setDescription("تم اكتمال الطلب وصرف المبلغ للبائع: " + card.getName());
             buyerLog.setPreviousBalance((double) buyer.getPoints());
@@ -489,7 +490,7 @@ public class StoreService {
                 log.setUserId(seller.getId());
                 log.setUsername(seller.getUsername());
                 log.setFullName(seller.getFull_name());
-                log.setTransactionDate(LocalDateTime.now());
+                log.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
                 log.setType("PRODUCT_APPROVED");
                 log.setDescription("تمت الموافقة على منتجك: " + product.getName());
                 log.setPreviousBalance((double) seller.getPoints());
@@ -514,7 +515,7 @@ public class StoreService {
                 log.setUserId(seller.getId());
                 log.setUsername(seller.getUsername());
                 log.setFullName(seller.getFull_name());
-                log.setTransactionDate(LocalDateTime.now());
+                log.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
                 log.setType("PRODUCT_REJECTED");
                 log.setDescription("تم رفض منتجك: " + product.getName() + " - السبب: " + reason);
                 log.setPreviousBalance((double) seller.getPoints());
@@ -595,7 +596,7 @@ public class StoreService {
             log.setUserId(buyer.getId());
             log.setUsername(buyer.getUsername());
             log.setFullName(buyer.getFull_name());
-            log.setTransactionDate(LocalDateTime.now());
+            log.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
             log.setType("ORDER_DELIVERED");
             log.setDescription("تم تسليم طلبك: " + purchase.getCardProduct().getName());
             log.setPreviousBalance((double) buyer.getPoints());
@@ -662,7 +663,7 @@ public class StoreService {
             log.setUserId(user.getId());
             log.setUsername(user.getUsername());
             log.setFullName(user.getFull_name());
-            log.setTransactionDate(LocalDateTime.now());
+            log.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
             log.setType("ORDER_REJECTED"); // Changed from REFUND to be more specific
             log.setDescription("تم رفض طلبك: " + purchase.getCardProduct().getName() + " - السبب: " + reason);
             log.setPreviousBalance((double) oldPoints);
@@ -705,7 +706,7 @@ public class StoreService {
         buyerLog.setUserId(buyer.getId());
         buyerLog.setUsername(buyer.getUsername());
         buyerLog.setFullName(buyer.getFull_name());
-        buyerLog.setTransactionDate(LocalDateTime.now());
+        buyerLog.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
         buyerLog.setType("CANCEL_ORDER");
         buyerLog.setDescription("إلغاء طلب: " + purchase.getCardProduct().getName() + " - إعادة النقاط");
         buyerLog.setPreviousBalance((double) oldPoints);
@@ -719,7 +720,7 @@ public class StoreService {
                 sellerLog.setUserId(seller.getId());
                 sellerLog.setUsername(seller.getUsername());
                 sellerLog.setFullName(seller.getFull_name());
-                sellerLog.setTransactionDate(LocalDateTime.now());
+                sellerLog.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
                 sellerLog.setType("ORDER_CANCELLED");
                 sellerLog.setDescription("إلغاء طلب على منتجك: " + purchase.getCardProduct().getName() +
                         " - سبب المشتري: " + reason);
@@ -870,7 +871,7 @@ public class StoreService {
                 log.setUserId(buyer.getId());
                 log.setUsername(buyer.getUsername());
                 log.setFullName(buyer.getFull_name());
-                log.setTransactionDate(LocalDateTime.now());
+                log.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
                 log.setType("ORDER_ON_DELIVERY");
                 log.setDescription("طلبك قيد التوصيل: " + purchase.getCardProduct().getName());
                 log.setPreviousBalance((double) buyer.getPoints());
@@ -890,7 +891,7 @@ public class StoreService {
                 log.setUserId(buyer.getId());
                 log.setUsername(buyer.getUsername());
                 log.setFullName(buyer.getFull_name());
-                log.setTransactionDate(LocalDateTime.now());
+                log.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
                 log.setType("ORDER_DELIVERED");
                 log.setDescription("تم تسليم طلبك بنجاح: " + purchase.getCardProduct().getName());
                 log.setPreviousBalance((double) buyer.getPoints());
@@ -958,7 +959,7 @@ public class StoreService {
                 buyerLog.setUserId(buyer.getId());
                 buyerLog.setUsername(buyer.getUsername());
                 buyerLog.setFullName(buyer.getFull_name());
-                buyerLog.setTransactionDate(LocalDateTime.now());
+                buyerLog.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
                 buyerLog.setType("DISPUTE_RESOLVED");
                 buyerLog.setDescription("تم حل البلاغ - تحرير الأموال للبائع. ملاحظة الإدارة: " + adminComment);
                 buyerLog.setPreviousBalance((double) buyer.getPoints());
@@ -971,7 +972,7 @@ public class StoreService {
                 sellerLog.setUserId(seller.getId());
                 sellerLog.setUsername(seller.getUsername());
                 sellerLog.setFullName(seller.getFull_name());
-                sellerLog.setTransactionDate(LocalDateTime.now());
+                sellerLog.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
                 sellerLog.setType("DISPUTE_RESOLVED");
                 sellerLog.setDescription("تم حل البلاغ - تحرير الأموال لك. ملاحظة الإدارة: " + adminComment);
                 sellerLog.setPreviousBalance((double) seller.getPoints());
@@ -1002,7 +1003,7 @@ public class StoreService {
                 buyerLog.setUserId(buyer.getId());
                 buyerLog.setUsername(buyer.getUsername());
                 buyerLog.setFullName(buyer.getFull_name());
-                buyerLog.setTransactionDate(LocalDateTime.now());
+                buyerLog.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
                 buyerLog.setType("DISPUTE_RESOLVED");
                 buyerLog.setDescription("تم حل البلاغ - إعادة النقاط لك. ملاحظة الإدارة: " + adminComment);
                 buyerLog.setPreviousBalance((double) buyer.getPoints());
@@ -1015,7 +1016,7 @@ public class StoreService {
                 sellerLog.setUserId(seller.getId());
                 sellerLog.setUsername(seller.getUsername());
                 sellerLog.setFullName(seller.getFull_name());
-                sellerLog.setTransactionDate(LocalDateTime.now());
+                sellerLog.setTransactionDate(LocalDateTime.now(ZoneId.of("Asia/Baghdad")));
                 sellerLog.setType("DISPUTE_RESOLVED");
                 sellerLog.setDescription("تم حل البلاغ - إعادة النقاط للمشتري. ملاحظة الإدارة: " + adminComment);
                 sellerLog.setPreviousBalance((double) seller.getPoints());
