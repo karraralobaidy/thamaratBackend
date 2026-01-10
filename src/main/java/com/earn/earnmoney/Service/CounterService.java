@@ -499,9 +499,9 @@ public class CounterService {
                 // Fallback: calculate from expireAt - duration (or default 30 days)
                 startDate = uc.getExpireAt();
                 if (startDate != null) {
-                    Integer durationDays = uc.getCounter().getDurationDays();
+                    Long durationDays = uc.getCounter().getDurationDays();
                     if (durationDays == null) {
-                        durationDays = 30; // Default to 30 days if duration not set
+                        durationDays = 30L; // Default to 30 days if duration not set
                     }
                     startDate = uc.getExpireAt().minusDays(durationDays);
                 }
