@@ -658,6 +658,65 @@ public class StoreService {
         cardPurchaseRepo.save(purchase);
     }
 
+    // Buyer Cancel Order (only if PENDING_APPROVAL)
+    @Transactional
+    public void buyerCancelOrder(UserAuth buyer, Long purchaseId, String reason) {
+        CardPurchase purchase = cardPurchaseRepo.findById(purchaseId)
+                .orElseThrow(() -> new RuntimeException("الطلب غير موجود"));
+
+        // Verify this is buyer's purchase
+        if (!purchase.getUser().getId().equals(buyer.getId())) {
+            throw new RuntimeException("عذراً، هذا ليس طلبك");
+        }
+
+        // Only allow cancel if PENDING_APPROVAL
+        if (purchase.getStatus() != CardPurchase.PurchaseStatus.PENDING_APPROVAL) {
+            throw new RuntimeException("لا يمكن إلغاء الطلب إلا في حالة انتظار الموافقة");
+        }
+
+        purchase.setStatus(CardPurchase.PurchaseStatus.CANCELLED);
+        purchase.setRejectionReason("إلغاء من المشتري: " + reason);
+
+        // Refund points to buyer
+        long oldPoints = buyer.getPoints();
+        long refundAmount = purchase.getCardProduct().getPrice();
+        long newPoints = oldPoints + refundAmount;
+
+        buyer.setPoints(newPoints);
+        userRepo.save(buyer);
+
+        // Log for buyer
+        LogTransaction buyerLog = new LogTransaction();
+        buyerLog.setUserId(buyer.getId());
+        buyerLog.setUsername(buyer.getUsername());
+        buyerLog.setFullName(buyer.getFull_name());
+        buyerLog.setTransactionDate(LocalDateTime.now());
+        buyerLog.setType("CANCEL_ORDER");
+        buyerLog.setDescription("إلغاء طلب: " + purchase.getCardProduct().getName() + " - إعادة النقاط");
+        buyerLog.setPreviousBalance((double) oldPoints);
+        buyerLog.setNewBalance((double) newPoints);
+        logRepo.save(buyerLog);
+
+        // Notify seller about cancellation
+        if (purchase.getCardProduct().getSellerId() != null) {
+            userRepo.findById(purchase.getCardProduct().getSellerId()).ifPresent(seller -> {
+                LogTransaction sellerLog = new LogTransaction();
+                sellerLog.setUserId(seller.getId());
+                sellerLog.setUsername(seller.getUsername());
+                sellerLog.setFullName(seller.getFull_name());
+                sellerLog.setTransactionDate(LocalDateTime.now());
+                sellerLog.setType("ORDER_CANCELLED");
+                sellerLog.setDescription("إلغاء طلب على منتجك: " + purchase.getCardProduct().getName() +
+                        " - سبب المشتري: " + reason);
+                sellerLog.setPreviousBalance((double) seller.getPoints());
+                sellerLog.setNewBalance((double) seller.getPoints());
+                logRepo.save(sellerLog);
+            });
+        }
+
+        cardPurchaseRepo.save(purchase);
+    }
+
     // Delete Card
     @Transactional
     public void deleteCard(Long cardId) {

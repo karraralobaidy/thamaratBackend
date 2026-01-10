@@ -205,11 +205,19 @@ public class StoreController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-    }
+    }\r\n\r\n // Buyer cancels order (only if PENDING_APPROVAL)\r\n
+              // @PostMapping(\"/buyer/cancel/{purchaseId}\")\r\n public ResponseEntity<?>
+              // cancelOrder(\r\n @PathVariable Long purchaseId,\r\n @RequestParam String
+              // reason) {\r\n try {\r\n storeService.buyerCancelOrder(getCurrentUser(),
+              // purchaseId, reason);\r\n return ResponseEntity.ok(Map.of(\"message\",
+              // \"\u062a\u0645 \u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u0637\u0644\u0628
+              // \u0628\u0646\u062c\u0627\u062d\"));\r\n } catch (Exception e) {\r\n return
+              // ResponseEntity.badRequest().body(Map.of(\"error\", e.getMessage()));\r\n
+              // }\r\n }
 
     // Admin: Release Points (Escrow)
-    @PostMapping("/admin/release-points/{purchaseId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/admin/release-points/{purchaseId}")@PreAuthorize("hasRole('ADMIN')")
+
     public ResponseEntity<?> releasePoints(@PathVariable Long purchaseId) {
         try {
             storeService.adminReleasePoints(purchaseId);
