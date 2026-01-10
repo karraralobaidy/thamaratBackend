@@ -224,13 +224,20 @@ public class UsersController {
 
         List<com.earn.earnmoney.dto.UserCounterDetailDTO> counters = user.getCounters().stream()
                 .filter(uc -> uc.getExpireAt().isAfter(java.time.LocalDateTime.now()))
-                .map(uc -> new com.earn.earnmoney.dto.UserCounterDetailDTO(
-                        uc.getId(),
-                        uc.getCounter().getName(),
-                        uc.getExpireAt(),
-                        uc.getCounter().getDailyPoints(),
-                        uc.getCounter().getPrice(),
-                        uc.getSubscribedAt()))
+                .map(uc -> {
+                    // Fallback: If subscribedAt is null (old counters), calculate from expireAt
+                    java.time.LocalDateTime subscribedAt = uc.getSubscribedAt();
+                    if (subscribedAt == null) {
+                        subscribedAt = uc.getExpireAt().minusDays(30);
+                    }
+                    return new com.earn.earnmoney.dto.UserCounterDetailDTO(
+                            uc.getId(),
+                            uc.getCounter().getName(),
+                            uc.getExpireAt(),
+                            uc.getCounter().getDailyPoints(),
+                            uc.getCounter().getPrice(),
+                            subscribedAt);
+                })
                 .collect(java.util.stream.Collectors.toList());
 
         return new ResponseEntity<>(counters, HttpStatus.OK);
