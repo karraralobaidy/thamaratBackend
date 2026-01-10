@@ -1049,7 +1049,10 @@ public class StoreService {
                 if (report.getOrder() != null && report.getOrder().getUser() != null) {
                     report.setBuyerName(report.getOrder().getUser().getFull_name());
                     // UserAuth doesn't have email field, using username as fallback
+                    report.setBuyerName(report.getOrder().getUser().getFull_name());
+                    // UserAuth doesn't have email field, using username as fallback
                     report.setBuyerEmail(report.getOrder().getUser().getUsername());
+                    report.setBuyerReferralCode(report.getOrder().getUser().getReferralCode());
                 }
 
                 // Seller & Product Details
@@ -1064,6 +1067,7 @@ public class StoreService {
                         userRepo.findById(sellerId).ifPresent(seller -> {
                             report.setSellerName(seller.getFull_name());
                             report.setSellerEmail(seller.getUsername());
+                            report.setSellerReferralCode(seller.getReferralCode());
                         });
                     }
                 }

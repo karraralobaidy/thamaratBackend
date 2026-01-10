@@ -65,4 +65,8 @@ public class OrderReport {
     private String buyerName;
     @Transient
     private String buyerEmail;
+    @Transient
+    private String sellerReferralCode;
+    @Transient
+    private String buyerReferralCode;
 }
