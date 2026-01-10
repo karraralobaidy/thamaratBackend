@@ -492,10 +492,19 @@ public class CounterService {
             dto.setCounterId(uc.getCounter().getId());
             dto.setCounterName(uc.getCounter().getName());
 
-            // Determine start date (use lastClickedAt or expireAt - duration)
-            LocalDateTime startDate = uc.getExpireAt();
-            if (startDate != null && uc.getCounter().getDurationDays() != null) {
-                startDate = uc.getExpireAt().minusDays(uc.getCounter().getDurationDays());
+            // Determine start date: use subscribedAt if available, otherwise calculate from
+            // expireAt
+            LocalDateTime startDate = uc.getSubscribedAt();
+            if (startDate == null) {
+                // Fallback: calculate from expireAt - duration (or default 30 days)
+                startDate = uc.getExpireAt();
+                if (startDate != null) {
+                    Integer durationDays = uc.getCounter().getDurationDays();
+                    if (durationDays == null) {
+                        durationDays = 30; // Default to 30 days if duration not set
+                    }
+                    startDate = uc.getExpireAt().minusDays(durationDays);
+                }
             }
             dto.setStartDate(startDate);
             dto.setEndDate(uc.getExpireAt());
