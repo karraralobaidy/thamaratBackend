@@ -99,7 +99,7 @@ public class StoreController {
             @RequestParam("name") String name,
             @RequestParam("price") Long price,
             @RequestParam("category") String category, // Description
-            @RequestParam("sectionName") String sectionName, // Section
+            @RequestParam(value = "sectionName", required = false) String sectionName, // Section
             @RequestParam("quantity") Integer quantity,
             @RequestParam("contactPhone") String contactPhone,
             @RequestParam(value = "type", required = false, defaultValue = "DIGITAL") String type, // DIGITAL or

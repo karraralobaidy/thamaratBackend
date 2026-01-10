@@ -243,12 +243,14 @@ public class UsersController {
             return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
         }
 
+        System.out.println("DEBUG: getUserReferrals called for user ID: " + id);
+        System.out.println("DEBUG: User found: " + user.getUsername() + ", referralCode: " + user.getReferralCode());
+
         org.springframework.data.domain.Page<UserAuth> referrals = userService
                 .findByReferralCodeFriend(user.getReferralCode(), pageable);
 
-        System.out.println(
-                "DEBUG: getUserReferrals for user " + user.getUsername() + ", code: " + user.getReferralCode());
-        System.out.println("DEBUG: Found " + referrals.getTotalElements() + " referrals");
+        System.out.println("DEBUG: Query executed. Found " + referrals.getTotalElements() + " referrals");
+        System.out.println("DEBUG: Referral code being searched: " + user.getReferralCode());
 
         Page<com.earn.earnmoney.dto.ReferralDetailDTO> referralDTOs = referrals.map(ref -> {
             // Find active counter for referral

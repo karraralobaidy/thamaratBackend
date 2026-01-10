@@ -249,8 +249,8 @@ public class StoreService {
         if (category == null || category.trim().isEmpty()) {
             throw new RuntimeException("وصف المنتج مطلوب");
         }
-        if (sectionName == null || sectionName.trim().isEmpty()) {
-            throw new RuntimeException("فئة المنتج (القسم) مطلوبة");
+        if (sectionName != null && sectionName.trim().isEmpty()) {
+            throw new RuntimeException("فئة المنتج (القسم) لا يمكن أن تكون فارغة");
         }
         if (quantity == null || quantity <= 0) {
             throw new RuntimeException("الكمية مطلوبة ويجب أن تكون أكبر من صفر");
@@ -284,7 +284,7 @@ public class StoreService {
             Image image = new Image();
             image.setName(file.getOriginalFilename());
             image.setType(file.getContentType());
-            image.setImage(file.getBytes());
+            image.setImage(ImageUtilities.compressImage(file.getBytes()));
             image = imageRepo.save(image);
             card.setImage(image);
         }
