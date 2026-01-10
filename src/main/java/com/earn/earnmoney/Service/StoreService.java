@@ -284,7 +284,7 @@ public class StoreService {
             Image image = new Image();
             image.setName(file.getOriginalFilename());
             image.setType(file.getContentType());
-            image.setData(file.getBytes());
+            image.setImage(file.getBytes());
             image = imageRepo.save(image);
             card.setImage(image);
         }
