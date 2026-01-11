@@ -557,21 +557,11 @@ public class UsersController {
             return ResponseEntity.badRequest().body(new MessageResponse("المستخدم غير موجود"));
         }
 
-        // Check if new username is already in use by another user
-        String trimmedUsername = newUsername.trim().toLowerCase();
-        if (userService.existsByUsername(trimmedUsername)) {
-            // Make sure it's not the same user's current username
-            if (!trimmedUsername.equals(user.getUsername().toLowerCase())) {
-                return ResponseEntity.badRequest()
-                        .body(new MessageResponse("اسم المستخدم موجود مسبقاً. يرجى اختيار اسم آخر"));
-            }
-        }
-
-        // Update username
-        user.setUsername(trimmedUsername);
+        // Update full name
+        user.setFull_name(newFullName.trim());
         userService.saveUser(user);
 
-        return ResponseEntity.ok(new MessageResponse("تم تحديث اسم المستخدم بنجاح إلى: " + trimmedUsername));
+        return ResponseEntity.ok(new MessageResponse("تم تحديث الاسم الكامل بنجاح إلى: " + newFullName.trim()));
     }
 
     public void sendEmail(String recipientEmail, String title, String body)
