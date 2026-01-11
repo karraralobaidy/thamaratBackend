@@ -543,12 +543,12 @@ public class UsersController {
         return ResponseEntity.ok(new MessageResponse("تم تحديث رمز الإحالة بنجاح إلى: " + newReferralCode));
     }
 
-    @PostMapping("/update-username/{id}")
+    @PostMapping("/update-full-name/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> updateUsername(@PathVariable Long id, @RequestParam String newUsername) {
+    public ResponseEntity<?> updateFullName(@PathVariable Long id, @RequestParam String newFullName) {
         // Validate input
-        if (newUsername == null || newUsername.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(new MessageResponse("اسم المستخدم لا يمكن أن يكون فارغاً"));
+        if (newFullName == null || newFullName.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new MessageResponse("الاسم الكامل لا يمكن أن يكون فارغاً"));
         }
 
         // Check if user exists
