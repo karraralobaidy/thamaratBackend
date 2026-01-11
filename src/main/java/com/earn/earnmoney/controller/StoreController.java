@@ -47,28 +47,37 @@ public class StoreController {
 
     @GetMapping("/getimage/{cardId}")
     public ResponseEntity<byte[]> getImage(@PathVariable("cardId") Long cardId) {
-        CardProduct card = storeService.findCardById(cardId);
+        try {
+            CardProduct card = storeService.findCardById(cardId);
 
-        if (card != null && card.getImage() != null && card.getImage().getImage() != null) {
+            if (card == null || card.getImage() == null || card.getImage().getImage() == null) {
+                return ResponseEntity.notFound().build();
+            }
+
             Image image = card.getImage();
             byte[] imageData = ImageUtilities.decompressImage(image.getImage());
-            String contentType = image.getType();
+
             MediaType mediaType = MediaType.IMAGE_JPEG;
-            if (contentType != null) {
+            if (image.getType() != null) {
                 try {
-                    MediaType parsed = MediaType.parseMediaType(contentType);
-                    if (parsed != null) {
-                        mediaType = parsed;
-                    }
+                    mediaType = MediaType.parseMediaType(image.getType());
                 } catch (Exception e) {
-                    mediaType = MediaType.IMAGE_JPEG;
+                    // Default to JPEG if parsing fails
                 }
             }
+
             return ResponseEntity.ok()
                     .contentType(mediaType)
+                    .cacheControl(org.springframework.http.CacheControl
+                            .maxAge(1, java.util.concurrent.TimeUnit.HOURS)
+                            .cachePublic())
+                    .eTag(String.valueOf(card.getId()))
                     .body(imageData);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
         }
-        return ResponseEntity.notFound().build();
     }
 
     @PostMapping("/buy/{cardId}")
