@@ -334,6 +334,18 @@ public class UsersController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/restoreuser/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> restoreUser(@PathVariable Long id) {
+        UserAuth user = userService.findById(id);
+        if (user == null) {
+            return ResponseEntity.badRequest().body(new MessageResponse("المستخدم غير موجود"));
+        }
+        user.setDeleted(false);
+        userService.saveUser(user);
+        return ResponseEntity.ok(new MessageResponse("تم إلغاء الحذف بنجاح"));
+    }
+
     @PostMapping("/adduseradmin")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> addUserOrAdmin(@Valid @RequestBody SignupRequest signUpRequest) {
