@@ -152,6 +152,7 @@ public class UsersController {
                     user.getFull_name(),
                     user.isActive(),
                     user.isBand(),
+                    user.isDeleted(),
                     user.getPoints(),
                     user.getReferralCode(),
                     user.getNumberOfReferral(),

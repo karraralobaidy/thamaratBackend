@@ -14,6 +14,7 @@ public class UserSummaryResponse {
     private String full_name;
     private boolean active;
     private boolean band;
+    private boolean deleted;
     private Long points;
     private String referralCode;
     private int numberOfReferral;
