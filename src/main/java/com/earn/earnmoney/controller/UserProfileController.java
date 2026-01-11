@@ -27,8 +27,13 @@ public class UserProfileController {
     @PostMapping(value = "/image")
     public ResponseEntity<?> uploadProfileImage(@RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "image", required = false) MultipartFile image) throws IOException {
-        userAuthService.updateProfileImage(userId, image);
-        return ResponseEntity.ok().build();
+        try {
+            userAuthService.updateProfileImage(userId, image);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(new com.earn.earnmoney.payload.response.MessageResponse(e.getMessage()));
+        }
     }
 
     /** Retrieve profile picture */
