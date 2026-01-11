@@ -167,6 +167,22 @@ public class UserAuthServiceImpl implements UserAuthService {
         if (userId == null)
             throw new RuntimeException("User ID is required");
         UserAuth user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Check if user already has a profile image
+        boolean hasExistingImage = user.getProfileImage() != null;
+
+        // If user has existing image, charge 50,000 points
+        if (hasExistingImage) {
+            Long currentPoints = user.getPoints();
+            long IMAGE_CHANGE_COST = 50000;
+
+            if (currentPoints < IMAGE_CHANGE_COST) {
+                throw new RuntimeException("لا يوجد لديك نقاط كافية. تحتاج إلى 50,000 نقطة لتغيير الصورة");
+            }
+
+            user.setPoints(currentPoints - IMAGE_CHANGE_COST);
+        }
+
         Image image = new Image();
         image.setName(file.getOriginalFilename());
         image.setType(file.getContentType());
