@@ -20,7 +20,7 @@ public interface UserAuthRepo extends JpaRepository<UserAuth, Long> {
     @Query(value = Find_users, nativeQuery = true)
     List<Object[]> findUsersWithoutPassword();
 
-    @Query("SELECT r FROM UserAuth r WHERE (r.username LIKE %:query% OR r.full_name LIKE %:query% OR r.referralCode LIKE %:query% OR CAST(r.points AS string) LIKE %:query%) AND r.deleted = false")
+    @Query("SELECT r FROM UserAuth r WHERE (r.username LIKE %:query% OR r.full_name LIKE %:query% OR r.referralCode LIKE %:query% OR CAST(r.points AS string) LIKE %:query%)")
     Page<UserAuth> findAllByQuery(@Param("query") String query, Pageable pageable);
 
     @Query("SELECT r.full_name,r.username,r.points,r.active,r.band , r.id ,r.date FROM UserAuth r WHERE r.deleted = false")
