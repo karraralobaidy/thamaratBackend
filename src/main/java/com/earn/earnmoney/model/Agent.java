@@ -16,6 +16,9 @@ public class Agent {
     private String facebook;
     private String instagram;
 
+    @Column(name = "notes", length = 500)
+    private String notes;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "image_id")
     private Image image;
@@ -93,5 +96,13 @@ public class Agent {
 
     public void setImage(Image image) {
         this.image = image;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 }

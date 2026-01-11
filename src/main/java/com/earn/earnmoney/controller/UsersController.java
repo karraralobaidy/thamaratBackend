@@ -543,6 +543,37 @@ public class UsersController {
         return ResponseEntity.ok(new MessageResponse("تم تحديث رمز الإحالة بنجاح إلى: " + newReferralCode));
     }
 
+    @PostMapping("/update-username/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateUsername(@PathVariable Long id, @RequestParam String newUsername) {
+        // Validate input
+        if (newUsername == null || newUsername.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new MessageResponse("اسم المستخدم لا يمكن أن يكون فارغاً"));
+        }
+
+        // Check if user exists
+        UserAuth user = userService.getUserById(id).orElse(null);
+        if (user == null) {
+            return ResponseEntity.badRequest().body(new MessageResponse("المستخدم غير موجود"));
+        }
+
+        // Check if new username is already in use by another user
+        String trimmedUsername = newUsername.trim().toLowerCase();
+        if (userService.existsByUsername(trimmedUsername)) {
+            // Make sure it's not the same user's current username
+            if (!trimmedUsername.equals(user.getUsername().toLowerCase())) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("اسم المستخدم موجود مسبقاً. يرجى اختيار اسم آخر"));
+            }
+        }
+
+        // Update username
+        user.setUsername(trimmedUsername);
+        userService.saveUser(user);
+
+        return ResponseEntity.ok(new MessageResponse("تم تحديث اسم المستخدم بنجاح إلى: " + trimmedUsername));
+    }
+
     public void sendEmail(String recipientEmail, String title, String body)
             throws MessagingException, UnsupportedEncodingException {
         MimeMessage message = mailSender.createMimeMessage();

@@ -34,9 +34,10 @@ public class AdminAgentController {
             @RequestParam(value = "telegram", required = false) String telegram,
             @RequestParam(value = "facebook", required = false) String facebook,
             @RequestParam(value = "instagram", required = false) String instagram,
+            @RequestParam(value = "notes", required = false) String notes,
             @RequestParam(value = "image", required = false) MultipartFile image) throws IOException {
 
-        agentService.registerAgent(name, phone, whatsapp, telegram, facebook, instagram, image);
+        agentService.registerAgent(name, phone, whatsapp, telegram, facebook, instagram, notes, image);
         return ResponseEntity.ok(new MessageResponse("تمت إضافة الوكيل بنجاح"));
     }
 
@@ -49,9 +50,10 @@ public class AdminAgentController {
             @RequestParam(value = "telegram", required = false) String telegram,
             @RequestParam(value = "facebook", required = false) String facebook,
             @RequestParam(value = "instagram", required = false) String instagram,
+            @RequestParam(value = "notes", required = false) String notes,
             @RequestParam(value = "image", required = false) MultipartFile image) throws IOException {
 
-        agentService.updateAgent(id, name, phone, whatsapp, telegram, facebook, instagram, image);
+        agentService.updateAgent(id, name, phone, whatsapp, telegram, facebook, instagram, notes, image);
         return ResponseEntity.ok(new MessageResponse("تم تحديث بيانات الوكيل بنجاح"));
     }
 

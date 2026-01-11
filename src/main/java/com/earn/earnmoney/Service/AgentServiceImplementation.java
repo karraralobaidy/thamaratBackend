@@ -1,7 +1,6 @@
 package com.earn.earnmoney.Service;
 
 import com.earn.earnmoney.model.Agent;
-import com.earn.earnmoney.model.Agent;
 import com.earn.earnmoney.model.Image;
 import com.earn.earnmoney.repo.AgentRepo;
 import com.earn.earnmoney.util.ImageUtilities;
@@ -32,7 +31,7 @@ public class AgentServiceImplementation implements AgentService {
 
     @Override
     public Agent registerAgent(String name, String phone, String whatsapp, String telegram, String facebook,
-            String instagram, MultipartFile file) throws IOException {
+            String instagram, String notes, MultipartFile file) throws IOException {
         Agent agent = new Agent();
         agent.setName(name);
         agent.setPhone(phone);
@@ -40,6 +39,7 @@ public class AgentServiceImplementation implements AgentService {
         agent.setTelegram(telegram);
         agent.setFacebook(facebook);
         agent.setInstagram(instagram);
+        agent.setNotes(notes);
 
         if (file != null && !file.isEmpty()) {
             Image image = new Image();
@@ -54,7 +54,7 @@ public class AgentServiceImplementation implements AgentService {
 
     @Override
     public Agent updateAgent(Long id, String name, String phone, String whatsapp, String telegram, String facebook,
-            String instagram, MultipartFile file) throws IOException {
+            String instagram, String notes, MultipartFile file) throws IOException {
         Agent agent = agentRepo.findById(id).orElseThrow(() -> new RuntimeException("Agent not found"));
         agent.setName(name);
         agent.setPhone(phone);
@@ -62,6 +62,7 @@ public class AgentServiceImplementation implements AgentService {
         agent.setTelegram(telegram);
         agent.setFacebook(facebook);
         agent.setInstagram(instagram);
+        agent.setNotes(notes);
 
         if (file != null && !file.isEmpty()) {
             Image image = new Image();
