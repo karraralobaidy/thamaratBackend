@@ -7,6 +7,8 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.time.LocalDateTime;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Getter
 @Setter
@@ -29,6 +31,10 @@ public class Image {
 
     @Column(name = "image", unique = false, nullable = false, length = 10000000)
     private byte[] image;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @OneToOne(mappedBy = "adsImage")
     @JsonIgnore

@@ -66,12 +66,16 @@ public class StoreController {
                 }
             }
 
+            // Use image timestamp in ETag for cache invalidation when image is updated
+            String etagValue = card.getId() + "-" +
+                    (image.getUpdatedAt() != null ? image.getUpdatedAt().toString() : "0");
+
             return ResponseEntity.ok()
                     .contentType(mediaType)
                     .cacheControl(org.springframework.http.CacheControl
                             .maxAge(1, java.util.concurrent.TimeUnit.HOURS)
                             .cachePublic())
-                    .eTag(String.valueOf(card.getId()))
+                    .eTag(etagValue)
                     .body(imageData);
 
         } catch (Exception e) {
