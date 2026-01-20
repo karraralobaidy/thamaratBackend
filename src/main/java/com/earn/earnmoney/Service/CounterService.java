@@ -78,6 +78,9 @@ public class CounterService {
 
         user.setPoints(user.getPoints() - counter.getPrice());
 
+        // 2.5. إعادة تعيين جميع العدادات للبدء من جديد
+        resetUserCounters(user);
+
         // 3. إضافة العداد الجديد
         CounterPackage basePackage = packageRepo.findByCounterAndLevel(counter, 1)
                 .orElseThrow();
